@@ -219,6 +219,8 @@ td input.sc{width:70px}
 .nav.on{box-shadow:inset 3px 0 0 var(--primary)}
 .login{background:radial-gradient(900px 500px at 85% -10%,rgba(207,0,94,.14),transparent 60%),radial-gradient(700px 420px at -10% 110%,rgba(247,148,29,.12),transparent 60%)}
 .ph h2,.login h1{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+@media(max-width:900px){.filters>div{flex:1 1 150px;min-width:0}.filters select,.filters input{width:100%;min-width:0}}
 </style>
 </head>
 <body>
@@ -922,10 +924,10 @@ async function pTim() {
       <div><label class="f" id="tl"></label><input type="number" id="tn" min="1" value="${TK.n}"></div>
     </div>
     ${cust ? cusPanel() : ''}
-    <div class="row"><label class="row" style="gap:6px"><input type="checkbox" id="tb" ${TK.balance ? 'checked' : ''}> Seimbangkan komposisi gender tiap kelompok</label><span class="grow"></span><span class="muted" id="ti"></span><button class="btn" id="tgo">${ico('shuffle')} Acak kelompok</button></div></div>
+    <div class="row"><label class="row" style="gap:6px"><input type="checkbox" id="tb" ${TK.balance ? 'checked' : ''}> Seimbangkan komposisi gender tiap kelompok</label><label class="row" style="gap:6px"><input type="checkbox" id="tp" ${TK.pisah ? 'checked' : ''}> Pisahkan kelompok sesuai gender</label><span class="grow"></span><span class="muted" id="ti"></span><button class="btn" id="tgo">${ico('shuffle')} Acak kelompok</button></div></div>
     <div id="tr"></div>`;
   const pool = () => (cust ? cusPool() : S.siswa.filter(s => s.kelas === TK.kelas)).filter(s => !TK.gender || s.gender === TK.gender);
-  const label = () => { $('#tl').textContent = TK.mode === 'jumlah' ? 'Jumlah kelompok' : 'Anggota per kelompok'; $('#ti').textContent = `${pool().length} siswa terpilih`; $('#tb').disabled = !!TK.gender; };
+  const label = () => { $('#tl').textContent = TK.mode === 'jumlah' ? 'Jumlah kelompok' : 'Anggota per kelompok'; $('#ti').textContent = `${pool().length} siswa terpilih`; $('#tb').disabled = !!TK.gender || !!TK.pisah; $('#tp').disabled = !!TK.gender || !!TK.balance; };
   const tampil = () => {
     const h = TK.hasil;
     if (!h) { $('#tr').innerHTML = ''; return; }
@@ -934,6 +936,7 @@ async function pTim() {
   const acak = () => {
     const p = pool();
     if (!p.length) { toast(cust ? 'Daftar custom masih kosong atau tidak cocok dengan filter gender.' : 'Tidak ada siswa yang cocok. Buat kelas/halaqah dulu atau pakai sumber Custom.', 'err'); return; }
+    if (TK.pisah && !TK.gender) { const gs = fxPisah(p, TK.mode, TK.n); if (TK.mode === 'jumlah' && TK.n < gs.length) toast('Jumlah kelompok dinaikkan menjadi ' + gs.length + ' agar tiap gender punya kelompok sendiri.'); TK.hasil = gs; tampil(); return; }
     let n = TK.mode === 'jumlah' ? TK.n : Math.ceil(p.length / TK.n);
     n = Math.max(1, Math.min(n || 1, p.length));
     let urut;
@@ -950,6 +953,7 @@ async function pTim() {
     if (id === 'tg') { TK.gender = e.target.value; TK.hasil = null; tampil(); }
     if (id === 'tm') TK.mode = e.target.value;
     if (id === 'tb') TK.balance = e.target.checked;
+    if (id === 'tp') TK.pisah = e.target.checked;
     label();
   };
   v.oninput = e => { if (e.target.id === 'tn') TK.n = Math.max(1, parseInt(e.target.value) || 1); };
@@ -1336,21 +1340,55 @@ const fxMet = {
   'Ceramah Interaktif': ['Guru menjelaskan konsep inti {t} dengan contoh dan media.', 'Peserta didik mencatat dan mengajukan pertanyaan.', 'Latihan terbimbing secara berpasangan atau kelompok.', 'Latihan mandiri dan pembahasan bersama.']
 };
 const fxRppTeks = f => {
-  const st = fxMet[f.d].map(s => s.replace(/\{t\}/g, f.t)), a = Math.round(f.w * 0.15), b = f.w - 2 * a;
-  const L = ['# MODUL AJAR', '', '## A. Identitas', `- Mata pelajaran: ${f.m}`, `- Kelas/Jenjang: ${f.k}`, `- Topik: ${f.t}`, `- Jumlah pertemuan: ${f.p}`, `- Alokasi waktu: ${f.w} menit per pertemuan`, `- Model pembelajaran: ${f.d}`, '', '## B. Tujuan Pembelajaran', `- Peserta didik mampu menjelaskan konsep dan istilah penting pada topik ${f.t}.`, `- Peserta didik mampu menerapkan ${f.t} dalam latihan atau situasi nyata.`, '- Peserta didik mampu menyampaikan hasil belajarnya secara lisan atau tertulis.', '', '## C. Pemahaman Bermakna', `- ${f.t} berkaitan dengan kehidupan sehari-hari peserta didik.`, '', '## D. Pertanyaan Pemantik', `- Di mana kamu pernah menjumpai ${f.t}?`, `- Mengapa ${f.t} penting untuk dipelajari?`, ''];
-  for (let i = 1; i <= f.p; i++) L.push(`## E.${i} Kegiatan Pertemuan ${i}`, `- Fokus pertemuan: (tuliskan subtopik pertemuan ${i})`, `### Pendahuluan (${a} menit)`, '- Salam, doa, dan presensi.', i === 1 ? '- Apersepsi dan penyampaian tujuan pembelajaran.' : '- Mengulas pertemuan sebelumnya dan menyampaikan tujuan hari ini.', `### Kegiatan Inti (${b} menit)`, ...st.map(s => '- ' + s), `### Penutup (${a} menit)`, '- Peserta didik dan guru menyimpulkan pembelajaran.', '- Refleksi singkat dan tindak lanjut.', '');
-  L.push('## F. Asesmen', '- Asesmen diagnostik: tanya jawab awal untuk memetakan pemahaman.', '- Asesmen formatif: observasi, tanya jawab, dan latihan selama pembelajaran.', '- Asesmen sumatif: tugas, proyek, atau tes akhir topik. Skala penilaian 1 sampai 4.', '', '## G. Media dan Sumber Belajar', '- (tuliskan buku, media, atau alat yang dipakai)', '', '## H. Refleksi', '- Guru: bagian mana yang paling dipahami dan kurang dipahami peserta didik?', '- Peserta didik: apa yang kamu pelajari hari ini dan apa yang masih membingungkan?');
+  const st = fxMet[f.d].map(s => s.replace(/\{t\}/g, f.t)), T = f.t, w = f.jp * f.mnt, a = Math.max(5, Math.round(w * 0.15)), b = Math.max(10, w - 2 * a);
+  const tbl = (judul, rows) => ['#### ' + judul, '|* Aspek | Unggul | Cakap | Berkembang | Dasar | Belum Berkembang |', ...rows.map(r => '| ' + r.join(' | ') + ' |')];
+  const L = ['# MODUL AJAR', '', '## INFORMASI UMUM', '### A. Identitas Modul Ajar',
+    `| Nama Penyusun | ${f.u} |`, `| Satuan Pendidikan | ${f.s || '(tuliskan)'} |`, `| Tahun Penyusunan | ${new Date().getFullYear()} |`, `| Tahun Pelajaran | ${f.th} |`, `| Mata Pelajaran | ${f.m} |`, `| Kelas / Semester | ${f.k} |`, `| Tema / Topik | ${T} |`, `| Alokasi Waktu | ${f.jp} JP × ${f.mnt} menit${f.p > 1 ? ' per pertemuan, ' + f.p + ' pertemuan' : ''} |`,
+    '### B. Kompetensi Awal (Prasyarat)', `- Peserta didik telah mengenal konsep dasar yang berkaitan dengan ${T}. (sesuaikan)`,
+    '### C. Profil Lulusan', '- Beriman dan bertakwa', '- Berakhlak mulia', '- Bernalar kritis', '- Kreatif', '- Mandiri', '- Gotong royong', '- Komunikatif', '- Berkebinekaan global',
+    '### D. Sarana dan Prasarana', '| Media | (tuliskan, mis. papan tulis, gambar, buku teks) |', '| Sumber | (tuliskan buku atau sumber belajar) |', '| Alat dan Bahan | (tuliskan, mis. lembar kerja) |',
+    '### E. Target Peserta Didik', '| Karakteristik | (tuliskan usia dan gaya belajar peserta didik) |', `| Jumlah Peserta Didik | ${f.n ? f.n + ' orang' : '(tuliskan)'} |`,
+    '### F. Praktis Pedagogis', '| Moda Pembelajaran | Tatap muka |', '| Pendekatan | Meaningful Learning (pembelajaran bermakna) |', `| Model Pembelajaran | ${f.d} |`, '| Metode Pembelajaran | (mis. tanya jawab, diskusi, demonstrasi, permainan) |',
+    '', '## KOMPONEN INTI', '### A. Capaian Pembelajaran (CP)', '| Elemen / Domain | (tuliskan elemen) |', `| CP | (tuliskan capaian pembelajaran terkait ${T}) |`, '| Lintas Pembelajaran | (opsional) |',
+    '### B. Tujuan Pembelajaran', `- Peserta didik mampu menjelaskan atau menyebutkan konsep penting pada topik ${T}.`, `- Peserta didik mampu menghubungkan ${T} dengan contoh nyata.`, `- Peserta didik mampu menunjukkan pemahaman ${T} melalui tugas atau praktik.`,
+    '### C. Asesmen', `- Asesmen awal: kuis lisan singkat untuk mengukur pengetahuan awal tentang ${T}.`, '- Asesmen saat pembelajaran (formatif): observasi, aktivitas kelas, dan tanya jawab.', '- Asesmen akhir (sumatif): tugas, lembar kerja, atau tes singkat.', '- Tindak lanjut remedial: latihan ulang dengan bimbingan.', '- Tindak lanjut pengayaan: tugas tambahan yang lebih menantang.',
+    '### D. Materi Pokok', `- ${T}`, '- (rincikan materi dan kosakata pendukung)',
+    '### E. Pemahaman Bermakna', '- Peserta didik memahami bahwa:', `- ${T} berguna dalam kehidupan sehari-hari.`,
+    '### F. Pertanyaan Pemantik', `- Di mana kamu pernah menjumpai ${T}?`, `- Mengapa ${T} penting untuk dipelajari?`, '', '### G. Kegiatan Pembelajaran'];
+  for (let i = 1; i <= f.p; i++) {
+    const pre = f.p > 1 ? `Pertemuan ${i}: ` : '';
+    L.push(f.p > 1 ? `#### Pertemuan ${i} (fokus: tuliskan subtopik)` : '',
+      `#### ${pre}Pendahuluan (${a} menit)`, '- Pengalaman belajar: peserta didik mengingat kembali pengetahuan awal tentang ' + T + ' dan menyadari manfaatnya.', '- Meaningful Learning: guru mengaitkan ' + T + ' dengan benda atau pengalaman nyata.', '- Mindful Learning: peserta didik fokus mendengarkan dan menirukan dengan penuh perhatian.', '- Joyful Learning: pembelajaran diawali permainan atau kegiatan ringan.', '- Integrated Islamic Character: guru mengaitkan pembelajaran dengan nilai-nilai Islam.', '- Guru membuka pembelajaran dengan salam dan doa.', '- Guru mengajak peserta didik menyebutkan pengalaman terkait ' + T + ' dan mengajukan pertanyaan pemantik.', '- Guru menyampaikan tujuan pembelajaran.',
+      `#### ${pre}Kegiatan Inti (${b} menit)`, '- Pengalaman belajar: peserta didik menyimak, mencoba, dan menghubungkan konsep dengan contoh nyata.', ...st.map(s => '- ' + s), '- Meaningful Learning: media dan contoh nyata membantu peserta didik memahami konsep secara konkret.', '- Mindful Learning: peserta didik fokus merespons instruksi dan memperhatikan detail.', '- Joyful Learning: kegiatan dilakukan dalam bentuk permainan sederhana dan kerja sama.',
+      `#### ${pre}Penutup (${a} menit)`, '- Menyusun kesimpulan bersama: guru menanyakan kembali poin penting, peserta didik menjawab bersama.', '- Doa bersama dan penguatan nilai: guru memimpin doa dan menguatkan nilai spiritual pembelajaran.', '- Apresiasi dan umpan balik positif: guru memberi pujian dan motivasi belajar.', '');
+  }
+  L.push('### H. Refleksi', '- Refleksi peserta didik: Saya belajar tentang … ; Saya bisa …', '- Refleksi pendidik: Apakah peserta didik memahami materi? Apakah pembelajaran menarik?', '', '### I. Lampiran Rubrik Penilaian',
+    ...tbl('a. Rubrik Penilaian Sikap', [['Disiplin dan Fokus', 'Selalu fokus, mengikuti instruksi tanpa diingatkan', 'Fokus dengan sedikit arahan', 'Kadang kurang fokus', 'Sering terdistraksi', 'Tidak memperhatikan'], ['Sopan dan Beradab', 'Menunjukkan sikap hormat dalam berbicara dan mendengarkan dengan tenang', 'Umumnya sopan dan menghormati guru/teman', 'Kadang menyela pembicaraan, tetapi mau memperbaiki', 'Kurang memperhatikan etika berbicara', 'Tidak menunjukkan adab dalam interaksi'], ['Kerja Sama', 'Aktif membantu teman, membagi tugas dengan adil, dan memberi semangat', 'Terlibat aktif dalam kelompok walau masih perlu arahan', 'Kadang berpartisipasi, kontribusi masih kecil', 'Pasif dalam kegiatan kelompok', 'Tidak mau ikut bekerja sama']]),
+    ...tbl('b. Rubrik Penilaian Pengetahuan', [['Penguasaan materi', `Dapat menjelaskan ${T} secara runtut dan benar`, `Menguasai sebagian besar materi ${T}`, 'Mengingat sebagian materi dengan benar, namun belum lengkap', 'Masih sering keliru', 'Tidak mengenal atau mengingat materi'], ['Pemahaman makna', 'Memahami hubungan konsep dengan contoh nyata secara tepat', 'Cukup memahami hubungan konsep dengan contoh nyata', 'Kadang keliru menghubungkan konsep dengan contoh', 'Sering keliru', 'Tidak memahami'], ['Keterkaitan dengan kehidupan nyata', 'Mampu menggunakan materi dalam situasi sederhana', 'Mampu menggunakan materi dengan bantuan', 'Kurang mampu menggunakan materi', 'Sulit menggunakan materi', 'Tidak mampu menggunakan materi']]),
+    ...tbl('c. Rubrik Penilaian Keterampilan', [['Ketepatan keterampilan inti', 'Sangat jelas dan tepat', 'Cukup jelas', 'Kadang kurang tepat', 'Kurang jelas', 'Tidak dapat melakukan'], ['Respons terhadap instruksi', 'Cepat dan tepat', 'Tepat dengan sedikit waktu', 'Kadang lambat', 'Sering salah', 'Tidak merespons'], ['Partisipasi aktivitas', 'Sangat aktif', 'Aktif', 'Cukup', 'Kurang aktif', 'Tidak ikut']]),
+    ...tbl('d. Rubrik Refleksi dan Nilai Sosial-Emosional', [['Refleksi diri', 'Mampu menjelaskan apa yang dipelajari dengan jelas', 'Menyebutkan sebagian apa yang dipelajari', 'Masih terbatas dalam menjelaskan', 'Sulit mengungkapkan apa yang dipelajari', 'Tidak mau refleksi'], ['Minat belajar', 'Sangat antusias', 'Antusias', 'Cukup tertarik', 'Kurang tertarik', 'Tidak tertarik']]));
   return L.join('\n');
 };
-const fxRppHtml = t => { let h = '', ul = false; t.split('\n').forEach(l => { const li = l.startsWith('- '); if (ul && !li) { h += '</ul>'; ul = false; } if (li && !ul) { h += '<ul>'; ul = true; } h += l.startsWith('# ') ? `<h1>${esc(l.slice(2))}</h1>` : l.startsWith('## ') ? `<h2>${esc(l.slice(3))}</h2>` : l.startsWith('### ') ? `<h3>${esc(l.slice(4))}</h3>` : li ? `<li>${esc(l.slice(2))}</li>` : l.trim() ? `<p>${esc(l)}</p>` : ''; }); return ul ? h + '</ul>' : h; };
+const fxRppHtml = t => {
+  let h = '', ul = false, tb = false;
+  t.split('\n').forEach(l => {
+    const li = l.startsWith('- '), tr = l.startsWith('|');
+    if (ul && !li) { h += '</ul>'; ul = false; } if (tb && !tr) { h += '</table>'; tb = false; }
+    if (li && !ul) { h += '<ul>'; ul = true; } if (tr && !tb) { h += '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;width:100%;font-size:10pt">'; tb = true; }
+    if (tr) { const hd = l.startsWith('|*'), c = l.slice(hd ? 2 : 1).replace(/\|\s*$/, '').split('|'); h += '<tr>' + c.map(x => hd ? `<th>${esc(x.trim())}</th>` : `<td>${esc(x.trim())}</td>`).join('') + '</tr>'; }
+    else h += l.startsWith('# ') ? `<h1>${esc(l.slice(2))}</h1>` : l.startsWith('## ') ? `<h2>${esc(l.slice(3))}</h2>` : l.startsWith('### ') ? `<h3>${esc(l.slice(4))}</h3>` : l.startsWith('#### ') ? `<h4>${esc(l.slice(5))}</h4>` : li ? `<li>${esc(l.slice(2))}</li>` : l.trim() ? `<p>${esc(l)}</p>` : '';
+  });
+  return h + (ul ? '</ul>' : '') + (tb ? '</table>' : '');
+};
 function pRpp() {
-  $('#view').innerHTML = `<div class="ph"><h2>Generator RPP / Modul Ajar</h2></div><div class="card" style="margin-bottom:14px"><p class="muted" style="margin-top:0">Membuat kerangka modul ajar dari isian di bawah. Hasilnya draf yang bebas Anda edit sebelum diunduh. Draf disusun dari template, bukan AI.</p><div class="row"><div class="fld grow"><label class="f">Kelas/Jenjang</label><input id="rk" placeholder="mis. Kelas 5"></div><div class="fld grow"><label class="f">Mata pelajaran</label><input id="rm"></div></div><div class="fld"><label class="f">Materi/topik utama</label><input id="rt"></div><div class="row"><div class="fld grow"><label class="f">Jumlah pertemuan</label><input id="rp" type="number" min="1" max="8" value="2"></div><div class="fld grow"><label class="f">Menit per pertemuan</label><input id="rw" type="number" min="20" value="70"></div><div class="fld grow"><label class="f">Model pembelajaran</label><select id="rd">${Object.keys(fxMet).map(k => `<option>${k}</option>`).join('')}</select></div></div><button class="btn" id="rg">Buat draf</button></div><div id="ro"></div>`;
+  const y = new Date().getFullYear(), th = new Date().getMonth() >= 6 ? y + '/' + (y + 1) : (y - 1) + '/' + y;
+  $('#view').innerHTML = `<div class="ph"><h2>Generator RPP / Modul Ajar</h2></div><div class="card" style="margin-bottom:14px"><p class="muted" style="margin-top:0">Membuat draf modul ajar dengan struktur Informasi Umum, Komponen Inti, dan Lampiran Rubrik. Bagian bertanda "(tuliskan ...)" perlu Anda lengkapi. Draf disusun dari template, bukan AI.</p><div class="row"><div class="fld grow"><label class="f">Nama penyusun</label><input id="ru" value="${esc(S.user.nama)}"></div><div class="fld grow"><label class="f">Satuan pendidikan</label><input id="rs" placeholder="mis. SD ..."></div></div><div class="row"><div class="fld grow"><label class="f">Kelas / Semester</label><input id="rk" placeholder="mis. Kelas II / Semester I"></div><div class="fld grow"><label class="f">Tahun pelajaran</label><input id="rth" value="${th}"></div></div><div class="row"><div class="fld grow"><label class="f">Mata pelajaran</label><input id="rm"></div><div class="fld grow"><label class="f">Tema / topik</label><input id="rt"></div></div><div class="row"><div class="fld grow"><label class="f">Jumlah pertemuan</label><input id="rp" type="number" min="1" max="8" value="1"></div><div class="fld grow"><label class="f">JP per pertemuan</label><input id="rj" type="number" min="1" value="2"></div><div class="fld grow"><label class="f">Menit per JP</label><input id="rw" type="number" min="10" value="30"></div><div class="fld grow"><label class="f">Jumlah peserta didik</label><input id="rn" type="number" min="1"></div></div><div class="fld"><label class="f">Model pembelajaran</label><select id="rd">${Object.keys(fxMet).map(k => `<option>${k}</option>`).join('')}</select></div><button class="btn" id="rg">Buat draf</button></div><div id="ro"></div>`;
   $('#rg').onclick = () => {
-    const f = { k: $('#rk').value.trim(), m: $('#rm').value.trim(), t: $('#rt').value.trim(), p: Math.min(8, Math.max(1, +$('#rp').value || 1)), w: +$('#rw').value || 70, d: $('#rd').value };
-    if (!f.k || !f.m || !f.t) return toast('Isi kelas, mata pelajaran, dan topik.', 'err');
-    $('#ro').innerHTML = `<div class="card"><textarea id="rx" rows="22" style="width:100%;font-family:inherit"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="rw1">Unduh Word (.doc)</button><button class="btn ghost" id="rw2">Cetak / simpan PDF</button></div><p class="muted" style="font-size:13px;margin:8px 0 0">Baris berawalan # adalah judul, dan berawalan - adalah butir daftar.</p></div>`;
+    const f = { u: $('#ru').value.trim(), s: $('#rs').value.trim(), k: $('#rk').value.trim(), th: $('#rth').value.trim(), m: $('#rm').value.trim(), t: $('#rt').value.trim(), p: Math.min(8, Math.max(1, +$('#rp').value || 1)), jp: Math.max(1, +$('#rj').value || 2), mnt: Math.max(10, +$('#rw').value || 30), n: +$('#rn').value || 0, d: $('#rd').value };
+    if (!f.k || !f.m || !f.t) return toast('Isi kelas/semester, mata pelajaran, dan topik.', 'err');
+    $('#ro').innerHTML = `<div class="card"><textarea id="rx" rows="28" style="width:100%;font-family:inherit"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="rw1">Unduh Word (.doc)</button><button class="btn ghost" id="rw2">Cetak / simpan PDF</button></div><p class="muted" style="font-size:13px;margin:8px 0 0">Baris berawalan # adalah judul, - adalah butir daftar, dan | adalah baris tabel (kolom dipisah tanda |).</p></div>`;
     $('#rx').value = fxRppTeks(f);
-    const html = () => `<html><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}h1{text-align:center}h2{font-size:13pt;margin-top:14pt}h3{font-size:11pt}</style></head><body>${fxRppHtml($('#rx').value)}</body></html>`;
+    const html = () => `<html><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}h1{text-align:center}h2{font-size:14pt;margin-top:16pt;border-bottom:1px solid #999}h3{font-size:12pt;margin-top:12pt}h4{font-size:11pt;margin:10pt 0 4pt}th{background:#eee}</style></head><body>${fxRppHtml($('#rx').value)}</body></html>`;
     $('#rw1').onclick = () => fxUnduh('Modul-Ajar-' + f.t.replace(/\W+/g, '-') + '.doc', html(), 'application/msword');
     $('#rw2').onclick = () => { const w = window.open('', '_blank'); if (!w) return toast('Izinkan pop-up untuk mencetak.', 'err'); w.document.write(html()); w.document.close(); w.focus(); w.print(); };
   };
@@ -1358,7 +1396,7 @@ function pRpp() {
 const fxKecil = f => new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(f); im.onload = () => { const k = Math.min(1, 1000 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok(c.toDataURL('image/jpeg', 0.7)); }; im.onerror = () => no(new Error('Gambar tidak bisa dibaca.')); im.src = u; });
 async function pKarya() {
   await muatSiswa(); const v = $('#view'), H = S.halaqah;
-  v.innerHTML = `<div class="ph"><h2>Portofolio Siswa</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto (kamera atau galeri)</label><input id="kf" type="file" accept="image/*" multiple></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div id="kg"></div>`;
+  v.innerHTML = `<div class="ph"><h2>Portofolio Siswa</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto</label><div class="row"><button type="button" class="btn ghost" id="kam">Ambil foto (kamera)</button><label class="btn ghost" for="kf" style="cursor:pointer">Pilih dari galeri</label></div><input id="kf" type="file" accept="image/*" multiple hidden><input id="kf1" type="file" accept="image/*" capture="environment" hidden><div class="muted" id="kn" style="font-size:13px;margin-top:6px"></div></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div id="kg"></div>`;
   let L = [];
   const gal = async () => {
     const id = $('#kb').value, g = $('#kg');
@@ -1368,15 +1406,31 @@ async function pKarya() {
   };
   const isi = () => { $('#kb').innerHTML = S.siswa.filter(s => s.halaqahId === $('#ka').value).sort((a, b) => a.nama.localeCompare(b.nama, 'id')).map(s => `<option value="${s.id}">${esc(s.nama)}</option>`).join(''); gal(); };
   $('#ka').onchange = isi; $('#kb').onchange = gal;
+  let pending = [];
+  const info = () => { $('#kn').textContent = pending.length ? pending.length + ' foto siap disimpan' : ''; };
+  $('#kf').onchange = $('#kf1').onchange = e => { pending.push(...e.target.files); e.target.value = ''; info(); };
+  $('#kam').onclick = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return $('#kf1').click();
+    let st; try { st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false }); } catch (e) { return $('#kf1').click(); }
+    const o = document.createElement('div'); o.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px';
+    o.innerHTML = '<video autoplay playsinline muted style="max-width:100%;max-height:72%;border-radius:10px"></video><div class="row"><button type="button" class="btn" id="kc1">Ambil foto</button><button type="button" class="btn ghost" id="kc2">Selesai</button></div><div id="kc3" style="color:#ddd;font-size:14px"></div>';
+    document.body.appendChild(o); const vd = o.querySelector('video'); vd.srcObject = st;
+    o.querySelector('#kc2').onclick = () => { st.getTracks().forEach(t => t.stop()); o.remove(); };
+    o.querySelector('#kc1').onclick = () => {
+      if (!vd.videoWidth) return;
+      const c = document.createElement('canvas'), k = Math.min(1, 1000 / Math.max(vd.videoWidth, vd.videoHeight)); c.width = Math.round(vd.videoWidth * k); c.height = Math.round(vd.videoHeight * k); c.getContext('2d').drawImage(vd, 0, 0, c.width, c.height);
+      c.toBlob(b => { pending.push(new File([b], 'kamera.jpg', { type: 'image/jpeg' })); o.querySelector('#kc3').textContent = pending.length + ' foto diambil'; info(); }, 'image/jpeg', 0.75);
+    };
+  };
   $('#kg').onclick = async e => {
     const z = e.target.closest('[data-z]'), x = e.target.closest('[data-x]');
     if (z) { const o = document.createElement('div'); o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px'; o.innerHTML = `<img src="${L.find(k => k.id === z.dataset.z).foto}" style="max-width:100%;max-height:100%;border-radius:8px">`; o.onclick = () => o.remove(); document.body.appendChild(o); }
     if (x && await confirmBox('Hapus foto ini dari portofolio?')) { try { await call('karyaDelete', { id: x.dataset.x }); gal(); } catch (er) { toast(er.message, 'err'); } }
   };
   $('#ku').onclick = async () => {
-    const id = $('#kb').value, fs = [...$('#kf').files];
+    const id = $('#kb').value, fs = pending.slice();
     if (!id || !fs.length) return toast('Pilih siswa dan foto dulu.', 'err');
-    try { for (const f of fs) await call('karyaSave', { siswaId: id, label: $('#kl').value.trim(), tanggal: fxHariIni(), foto: await fxKecil(f) }); $('#kf').value = ''; toast(fs.length + ' foto disimpan.'); gal(); } catch (er) { toast(er.message, 'err'); }
+    try { for (const f of fs) await call('karyaSave', { siswaId: id, label: $('#kl').value.trim(), tanggal: fxHariIni(), foto: await fxKecil(f) }); pending = []; info(); toast(fs.length + ' foto disimpan.'); gal(); } catch (er) { toast(er.message, 'err'); }
   };
   isi();
 }
@@ -1452,6 +1506,19 @@ const fxDesk = (nama, i, ak, lang, materi, pakaiNama) => {
   setInterval(cek, 30000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
 })();
+
+/* ============ Pembagi kelompok: pisahkan per gender ============ */
+const fxPisah = (p, mode, n) => {
+  const cat = [p.filter(s => s.gender === 'L'), p.filter(s => s.gender === 'P'), p.filter(s => s.gender !== 'L' && s.gender !== 'P')].filter(c => c.length);
+  let jml;
+  if (mode === 'jumlah') {
+    n = Math.max(n, cat.length); jml = cat.map(() => 1); let sisa = n - cat.length;
+    while (sisa > 0) { let b = -1, bv = 0; cat.forEach((c, i) => { if (jml[i] < c.length && c.length / jml[i] > bv) { bv = c.length / jml[i]; b = i; } }); if (b < 0) break; jml[b]++; sisa--; }
+  } else jml = cat.map(c => Math.ceil(c.length / n));
+  const g = [];
+  cat.forEach((c, i) => { const u = shuffle(c), gg = Array.from({ length: jml[i] }, () => []); u.forEach((s, j) => gg[j % jml[i]].push(s)); g.push(...gg); });
+  return g;
+};
 
 /* ============ Mulai ============ */
 (async function boot() {
