@@ -406,7 +406,7 @@ async function enter() {
 /* ============ Navigasi ============ */
 const NAV = [['beranda', 'Beranda', 'home'], ['jurnal', 'Jurnal Mengajar', 'book'], ['hadir', 'Daftar Hadir', 'check'], ['nilai', 'Kalkulator Nilai', 'calc'], ['picker', 'Pemilih Nama Acak', 'shuffle'], ['tim', 'Pembagi Kelompok', 'users'], ['siswa', 'Kelas/Halaqah & Siswa', 'user'], ['pengaturan', 'Pengaturan', 'gear']];
 function buildNav() {
-  const items = NAV.concat(S.user && S.user.admin ? [['admin', 'Panel Admin', 'shield']] : [], S.user && S.user.wali && S.user.wali.length ? [['wali', 'Jurnal Kelas Wali', 'users']] : []);
+  const items = NAV.concat(S.user && S.user.admin ? [['admin', 'Panel Admin', 'shield'], ['induk', 'Data Induk Siswa', 'user']] : [], S.user && S.user.wali && S.user.wali.length ? [['wali', 'Jurnal Kelas Wali', 'users']] : []);
   $('#nav').innerHTML = items.map(n => `<button class="nav" data-p="${n[0]}">${ico(n[2])}<span>${n[1]}</span></button>`).join('');
 }
 $('#logout').innerHTML = ico('out') + '<span>Keluar</span>';
@@ -418,7 +418,7 @@ function closeSide() { $('#side').classList.remove('open'); $('#scrim').classLis
 $('#logout').onclick = async () => { try { await call('logout'); } catch (e) {} clearSession(); showLogin(); };
 document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
 
-const PAGES = { beranda: pBeranda, jurnal: pJurnal, hadir: pHadir, nilai: pNilai, picker: pPicker, tim: pTim, siswa: pSiswa, pengaturan: pPengaturan, admin: pAdminFB, wali: pWali };
+const PAGES = { beranda: pBeranda, jurnal: pJurnal, hadir: pHadir, nilai: pNilai, picker: pPicker, tim: pTim, siswa: pSiswa, pengaturan: pPengaturan, admin: pAdminFB, wali: pWali, induk: pInduk };
 async function go(p) {
   PAGE = p; closeSide();
   $$('#nav .nav').forEach(b => b.classList.toggle('on', b.dataset.p === p));
@@ -1255,12 +1255,13 @@ async function adminSiswa() {
 const jrTabel = (a, g) => a.length ? `<div class="card"><div class="tw"><table><thead><tr><th>Tanggal</th>${g ? '<th>Guru</th>' : ''}<th>Kelas</th><th>Mapel</th><th>Materi</th><th>Hadir</th></tr></thead><tbody>${a.map(j => `<tr><td>${fmtTgl(j.tanggal)}</td>${g ? `<td>${esc(j.guru)}</td>` : ''}<td>${esc(j.kelas)}</td><td>${esc(j.mapel || '')}</td><td>${esc(j.materi)}${j.kendala ? `<div class="muted" style="font-size:12px">Kendala: ${esc(j.kendala)}</div>` : ''}</td><td>${j.hadir !== '' && j.hadir != null ? esc(j.hadir) + (j.total ? '/' + j.total : '') : '—'}</td></tr>`).join('')}</tbody></table></div></div>` : '<div class="card empty">Belum ada jurnal.</div>';
 async function pAdminFB() {
   const v = $('#view'), L = await call('adminGuru');
-  v.innerHTML = `<div class="ph"><h2>Panel Admin</h2></div><div class="card"><p class="muted" style="margin-top:0">Guru baru muncul di sini setelah masuk pertama kali dan baru bisa memakai aplikasi setelah disetujui. Data guru hanya bisa dilihat, tidak bisa diubah.</p><div class="tw"><table><thead><tr><th>Guru</th><th>Status</th><th>Wali kelas</th><th class="num">Jurnal</th><th>Terakhir</th><th></th></tr></thead><tbody>${L.map(g => `<tr><td>${esc(g.nama)}<div class="muted" style="font-size:12px">${esc(g.email)}</div></td><td><span class="badge ${g.aktif ? '' : 'P'}">${g.aktif ? 'Aktif' : 'Menunggu'}</span></td><td>${esc((g.wali || []).join(', ')) || '—'}</td><td class="num">${g.jurnal}</td><td>${g.terakhir ? fmtTgl(g.terakhir) : '—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-v="${g.uid}">Lihat</button> <button class="btn ghost sm" data-w="${g.uid}">Wali kelas</button> <button class="btn ghost sm" data-a="${g.uid}" data-s="${g.aktif ? 0 : 1}">${g.aktif ? 'Nonaktifkan' : 'Setujui'}</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada guru.</td></tr>'}</tbody></table></div></div>`;
+  v.innerHTML = `<div class="ph"><h2>Panel Admin</h2></div><div class="card"><p class="muted" style="margin-top:0">Guru baru muncul di sini setelah masuk pertama kali dan baru bisa memakai aplikasi setelah disetujui. Data guru hanya bisa dilihat, tidak bisa diubah.</p><div class="tw"><table><thead><tr><th>Guru</th><th>Status</th><th>Wali kelas</th><th class="num">Jurnal</th><th>Terakhir</th><th></th></tr></thead><tbody>${L.map(g => `<tr><td>${esc(g.nama)}<div class="muted" style="font-size:12px">${esc(g.email)}</div></td><td><span class="badge ${g.aktif ? '' : 'P'}">${g.aktif ? 'Aktif' : 'Menunggu'}</span></td><td>${esc((g.wali || []).join(', ')) || '—'}</td><td class="num">${g.jurnal}</td><td>${g.terakhir ? fmtTgl(g.terakhir) : '—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-v="${g.uid}">Lihat</button> <button class="btn ghost sm" data-n="${g.uid}">Ubah nama</button> <button class="btn ghost sm" data-w="${g.uid}">Wali kelas</button> <button class="btn ghost sm" data-a="${g.uid}" data-s="${g.aktif ? 0 : 1}">${g.aktif ? 'Nonaktifkan' : 'Setujui'}</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada guru.</td></tr>'}</tbody></table></div></div>`;
   v.onclick = async e => {
-    const b = e.target.closest('[data-v],[data-w],[data-a]'); if (!b) return;
-    const g = L.find(x => x.uid === (b.dataset.v || b.dataset.w || b.dataset.a));
+    const b = e.target.closest('[data-v],[data-w],[data-a],[data-n]'); if (!b) return;
+    const g = L.find(x => x.uid === (b.dataset.v || b.dataset.w || b.dataset.a || b.dataset.n));
     try {
       if (b.dataset.a) { await call('adminSetAktif', { uid: g.uid, aktif: b.dataset.s === '1' }); pAdminFB(); }
+      else if (b.dataset.n) modal('Ubah nama guru', `<div class="fld"><label class="f">Nama yang tampil</label><input name="nama" required value="${esc(g.nama)}"></div>`, async d => { await call('adminSetNama', { uid: g.uid, nama: d.nama }); toast('Nama disimpan.'); pAdminFB(); });
       else if (b.dataset.w) modal('Wali kelas: ' + esc(g.nama), `<div class="fld"><label class="f">Kelas yang diwalikan, pisahkan dengan koma (mis. 5A, 5B). Tulis sama dengan "Kelas siswa". Kosongkan untuk mencabut.</label><input name="kelas" value="${esc((g.wali || []).join(', '))}"></div>`, async d => { await call('adminSetWali', { uid: g.uid, kelas: d.kelas.split(',').map(x => x.trim()).filter(Boolean) }); toast('Wali kelas disimpan.'); pAdminFB(); });
       else {
         const d = await call('adminDetail', { uid: g.uid });
@@ -1277,6 +1278,28 @@ async function pWali() {
   const draw = () => { const q = $('#wq').value.toLowerCase(); $('#wl').innerHTML = jrTabel(L.filter(j => !q || [j.guru, j.mapel, j.materi].join(' ').toLowerCase().includes(q)), true); };
   v.onchange = e => { if (e.target.id === 'wk') { PWK = e.target.value; pWali(); } };
   v.oninput = e => { if (e.target.id === 'wq') draw(); };
+  draw();
+}
+
+async function pInduk() {
+  const v = $('#view'), L = await call('siswaInduk');
+  const ks = [...new Set(L.map(x => x.kelas))].sort((a, b) => String(a).localeCompare(String(b), 'id', { numeric: true }));
+  v.innerHTML = `<div class="ph"><h2>Data Induk Siswa</h2><button class="btn" id="im">Impor daftar</button></div><div class="card" style="margin-bottom:14px"><div class="filters"><input id="iq" placeholder="Cari nama…"><select id="ik"><option value="">Semua kelas</option>${ks.map(k => `<option>${esc(k)}</option>`).join('')}</select></div><p class="muted" id="ic" style="margin:8px 0 0"></p></div><div id="il"></div>`;
+  const draw = () => {
+    const q = $('#iq').value.toLowerCase(), k = $('#ik').value, a = L.filter(x => (!q || x.nama.toLowerCase().includes(q)) && (!k || x.kelas === k));
+    $('#ic').textContent = a.length + ' dari ' + L.length + ' siswa';
+    $('#il').innerHTML = a.length ? `<div class="card"><div class="tw"><table><thead><tr><th>Nama</th><th>Kelas</th><th>L/P</th><th class="num">Dipakai</th><th></th></tr></thead><tbody>${a.map(x => `<tr><td>${esc(x.nama)}</td><td>${esc(x.kelas)}</td><td>${esc(x.gender || '—')}</td><td class="num">${x.dipakai}</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-e="${x.id}">Ubah</button> <button class="btn ghost sm" data-d="${x.id}">Hapus</button></td></tr>`).join('')}</tbody></table></div></div>` : '<div class="card empty">Tidak ada siswa.</div>';
+  };
+  v.oninput = draw; v.onchange = draw;
+  v.onclick = async e => {
+    if (e.target.closest('#im')) return formImpor(null, pInduk);
+    const b = e.target.closest('[data-e],[data-d]'); if (!b) return;
+    const x = L.find(y => y.id === (b.dataset.e || b.dataset.d));
+    try {
+      if (b.dataset.d) { if (await confirmBox(`Hapus ${x.nama} dari data induk? Siswa ini juga hilang dari ${x.dipakai} kelas/halaqah guru dan tidak muncul lagi di jurnal atau rekap.`)) { await call('siswaHapus', { id: x.id }); toast('Siswa dihapus.'); pInduk(); } }
+      else modal('Ubah siswa', `<div class="fld"><label class="f">Nama lengkap</label><input name="nama" required value="${esc(x.nama)}"></div><div class="row"><div class="fld grow"><label class="f">Kelas siswa</label><input name="kelas" required value="${esc(x.kelas)}"></div><div class="fld grow"><label class="f">Gender</label><select name="gender"><option value="">—</option><option value="L" ${x.gender === 'L' ? 'selected' : ''}>Laki-laki</option><option value="P" ${x.gender === 'P' ? 'selected' : ''}>Perempuan</option></select></div></div>`, async d => { await call('siswaEdit', { id: x.id, ...d }); toast('Siswa diperbarui.'); pInduk(); });
+    } catch (er) { toast(er.message, 'err'); }
+  };
   draw();
 }
 
@@ -1420,6 +1443,15 @@ const A = {
     const wali = Object.fromEntries(ws.docs.map(d => [d.id, d.data().kelas || []]));
     return (await Promise.all(gs.docs.map(async d => { const j = await allOf(d.id, 'jurnal'); return { uid: d.id, ...d.data(), wali: wali[d.id] || [], jurnal: j.length, terakhir: j.map(x => x.tanggal).sort().pop() || '' }; }))).sort((a, b) => cmp(a.nama, b.nama));
   },
+  adminSetNama: async p => { const n = p.nama.trim(); if (!n) throw new Error('Nama tidak boleh kosong.'); await updateDoc(doc(db, 'guru', p.uid), { nama: n }); },
+  siswaInduk: async () => {
+    const [s, gs] = await Promise.all([all('siswa'), getDocs(collection(db, 'guru'))]);
+    const hs = (await Promise.all(gs.docs.map(d => allOf(d.id, 'halaqah')))).flat(), n = {};
+    hs.forEach(h => (h.anggota || []).forEach(i => { n[i] = (n[i] || 0) + 1; }));
+    return s.map(x => ({ id: x.id, nama: x.nama, kelas: String(x.kelas), gender: x.gender || '', dipakai: n[x.id] || 0 })).sort((a, b) => cmp(a.kelas, b.kelas) || cmp(a.nama, b.nama));
+  },
+  siswaEdit: async p => { if (!p.nama.trim() || !String(p.kelas).trim()) throw new Error('Nama dan kelas wajib diisi.'); await updateDoc(D('siswa', p.id), { nama: p.nama.trim(), kelas: String(p.kelas).trim(), gender: p.gender || '' }); },
+  siswaHapus: async p => deleteDoc(D('siswa', p.id)),
   adminSetAktif: async p => updateDoc(doc(db, 'guru', p.uid), { aktif: !!p.aktif }),
   adminSetWali: async p => {
     const ks = [...new Set((await all('siswa')).map(x => String(x.kelas).trim()))], kelas = p.kelas.map(k => ks.find(x => norm(x) === norm(k)) || k);
