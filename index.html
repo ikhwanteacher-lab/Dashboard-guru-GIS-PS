@@ -1,32 +1,31 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
-<script>window.__fbReady=new Promise(function(r){window.__fbRes=r;});</script><meta name="theme-color" content="#cf005e"><link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dashboard Guru">
+<script>window.__fbReady=new Promise(function(r){window.__fbRes=r;});</script><meta name="theme-color" content="#264653"><link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dashboard Guru">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard Guru</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
 <script>
   try { var t = localStorage.getItem('dg_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); document.documentElement.dataset.theme = t; } catch (e) {}
 </script>
 <style>
+/* tema: Sunset Boulevard */
 :root{
-  --bg:#fbf6f9; --card:#ffffff; --text:#2a1226; --muted:#7a6477; --border:#eddde8;
-  --primary:#cf005e; --primary-d:#a8004c; --soft:#fdebf3; --on-primary:#ffffff;
-  --danger:#dc2626; --warn:#f7941d; --info:#3b82f6; --ok:#10b981;
-  --shadow:0 1px 2px rgba(98,4,92,.05),0 8px 24px -12px rgba(98,4,92,.14);
-  --radius:16px;
+  --bg:#fdf6ec; --card:#fffdf9; --text:#264653; --muted:#5f7480; --border:#efdcc6;
+  --primary:#c9502f; --primary-d:#a63e22; --soft:#fbe9dd; --on-primary:#ffffff;
+  --danger:#c23b3b; --warn:#e08a2e; --info:#2a7f9e; --ok:#2a9d8f;
+  --shadow:0 1px 2px rgba(38,70,83,.05),0 10px 26px -14px rgba(38,70,83,.25);
+  --radius:12px;
 }
 html[data-theme="dark"]{
-  --bg:#140812; --card:#1e0f1b; --text:#f7edf4; --muted:#b7a0b2; --border:#3b2236;
-  --primary:#ff4f9a; --primary-d:#e8187a; --soft:rgba(255,79,154,.14); --on-primary:#2a0018;
-  --danger:#ff6b6b; --warn:#ffb347; --info:#60a5fa; --ok:#34d399;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.5);
+  --bg:#12262d; --card:#1a343d; --text:#fbeedd; --muted:#a9bec4; --border:#2b4a55;
+  --primary:#f4a261; --primary-d:#f7b985; --soft:rgba(244,162,97,.15); --on-primary:#1b2e35;
+  --danger:#ff7b6b; --warn:#e9c46a; --info:#7fb5c8; --ok:#8bc9a3;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px -14px rgba(0,0,0,.55);
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.5}
-h1,h2,h3,h4{font-family:Fredoka,Inter,sans-serif;margin:0;font-weight:600;letter-spacing:.2px}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'DejaVu Sans',Verdana,'Segoe UI',system-ui,sans-serif;font-size:15px;line-height:1.5}
+h1,h2,h3,h4{font-family:'DejaVu Serif',Georgia,'Times New Roman',serif;margin:0;font-weight:700;letter-spacing:-.01em}
 button,input,select,textarea{font:inherit;color:inherit}
 .hidden{display:none!important}
 svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -96,7 +95,7 @@ main{flex:1;min-width:0;padding:22px 26px 60px}
 
 /* stats */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
-.stat .n{font-family:Fredoka;font-size:32px;font-weight:600;line-height:1.1}
+.stat .n{font-family:'DejaVu Serif',Georgia,'Times New Roman',serif;font-size:32px;font-weight:600;line-height:1.1}
 .stat .l{color:var(--muted);font-size:13px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 @media(max-width:900px){.two{grid-template-columns:1fr}}
@@ -125,7 +124,7 @@ td input.sc{width:78px;padding:6px 8px;text-align:center}
 .jr{display:flex;gap:14px;margin-bottom:12px}
 .jr .d{flex:none;width:58px;text-align:center;background:var(--soft);border-radius:14px;padding:8px 0;color:var(--primary-d)}
 html[data-theme="dark"] .jr .d{color:var(--primary)}
-.jr .d b{display:block;font-family:Fredoka;font-size:22px;line-height:1}
+.jr .d b{display:block;font-family:'DejaVu Serif',Georgia,'Times New Roman',serif;font-size:22px;line-height:1}
 .jr .d span{font-size:11px}
 .jr .b{flex:1;min-width:0}
 .jr .b h4{font-size:16px;margin:4px 0 2px}
@@ -168,7 +167,7 @@ html[data-theme="dark"] .jr .d{color:var(--primary)}
 
 /* picker */
 .slot{margin:16px auto;max-width:620px;border-radius:24px;border:2px solid var(--primary);background:var(--soft);padding:34px 16px;text-align:center;overflow:hidden}
-.slot .nm{font-family:Fredoka;font-size:clamp(28px,6vw,52px);font-weight:600;min-height:1.3em;word-break:break-word}
+.slot .nm{font-family:'DejaVu Serif',Georgia,'Times New Roman',serif;font-size:clamp(28px,6vw,52px);font-weight:600;min-height:1.3em;word-break:break-word}
 .slot.done .nm{animation:pop .45s ease}
 .slot .sub{color:var(--muted);min-height:1.4em}
 @keyframes pop{0%{transform:scale(.85)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
@@ -190,12 +189,12 @@ html[data-theme="dark"] .jr .d{color:var(--primary)}
 .hi-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .hi-h h3{margin:0}
 .hi-big{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.hi-big .n{font-family:Fredoka;font-size:46px;font-weight:600;line-height:1}
+.hi-big .n{font-family:'DejaVu Serif',Georgia,'Times New Roman',serif;font-size:46px;font-weight:600;line-height:1}
 .hi-bar{display:flex;gap:3px;height:12px;border-radius:99px;overflow:hidden;background:var(--border)}
 .hi-bar i{display:block;min-width:8px}
 .hi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:auto}
 .hi-t{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;color:var(--muted)}
-.hi-t b{margin-left:auto;font-family:Fredoka;font-size:22px;color:var(--text)}
+.hi-t b{margin-left:auto;font-family:'DejaVu Serif',Georgia,'Times New Roman',serif;font-size:22px;color:var(--text)}
 .hi-t .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .hi .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
 
@@ -211,24 +210,71 @@ td input.sc{width:70px}
 .tt.err{background:var(--danger);color:#fff}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-/* tema: warna logo Gistrav Islamia School */
-:root{--grad:linear-gradient(135deg,#62045c 0%,#cf005e 50%,#fc1444 80%,#f7941d 100%);--grad-btn:linear-gradient(135deg,#cf005e,#e8114f)}
-.btn:not(.ghost):not(.danger){background:var(--grad-btn);color:#fff}
-.logo,.qc .ic{background:var(--grad);color:#fff;box-shadow:0 8px 20px -8px #cf005e}
-.bar i:not(.none){background:linear-gradient(180deg,#fc1444,#cf005e)}
-.nav.on{box-shadow:inset 3px 0 0 var(--primary)}
-.login{background:radial-gradient(900px 500px at 85% -10%,rgba(207,0,94,.14),transparent 60%),radial-gradient(700px 420px at -10% 110%,rgba(247,148,29,.12),transparent 60%)}
-.ph h2,.login h1{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
 
 @media(max-width:900px){.filters>div{flex:1 1 150px;min-width:0}.filters select,.filters input{width:100%;min-width:0}}
 
 @media(max-width:520px){.quick .qc:last-child:nth-child(odd){grid-column:1/-1}}
+
+/* ===== layout: Sunset Boulevard ===== */
+:root{--rail:#264653;--rail-t:#e7dccb;--sun:linear-gradient(115deg,#e76f51 0%,#f4a261 58%,#e9c46a 100%)}
+html[data-theme="dark"]{--rail:#0d1c21;--rail-t:#c9d6d9}
+.card{box-shadow:none}
+h2{font-size:28px;letter-spacing:-.02em}
+#side{width:236px;background:var(--rail);border-right:0;padding:22px 12px}
+.brand h2{color:#fff;font-size:18px}
+#side .logo{background:#e9c46a;color:#264653;box-shadow:none}
+.nav{color:var(--rail-t);border-radius:6px 18px 18px 6px;padding:10px 14px;font-size:14px}
+.nav:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav.on,html[data-theme="dark"] .nav.on{background:#e9c46a;color:#264653;box-shadow:none}
+.side-foot{border-top-color:rgba(255,255,255,.15)}
+#who{color:var(--rail-t)!important}
+main{padding:26px 44px 70px}
+#view,.top{max-width:1040px;margin-left:0;margin-right:auto}
+.lead-row{grid-template-columns:1.35fr .65fr;align-items:stretch;margin-bottom:26px}
+.lead-row .lead-panel{order:-1}
+.lead-panel{background:var(--sun);color:#17303a;border:0;border-radius:6px 40px 6px 6px;padding:28px}
+.lead-panel .muted,.lead-panel .hi-t{color:rgba(23,48,58,.85)}
+.lead-panel h3{color:#17303a}
+.lead-panel .hi-big .n{font-size:84px;letter-spacing:-.04em}
+.lead-panel .hi-bar{height:14px;background:rgba(255,255,255,.45)}
+.lead-panel .hi-t{border:0;background:rgba(255,253,249,.55);border-radius:8px}
+.lead-panel .hi-t b{color:#17303a}
+.lead-panel .btn{background:#264653;color:#fff}
+.figs{display:flex;flex-wrap:wrap;gap:8px 44px;padding:2px 0 24px;margin-bottom:22px;border-bottom:2px solid var(--border)}
+.figs div{display:flex;align-items:baseline;gap:10px}
+.figs b{font-size:30px;font-family:'DejaVu Serif',Georgia,serif;font-variant-numeric:tabular-nums}
+.figs span{color:var(--muted);font-size:14px}
+.sec{font-size:18px;margin:0 0 6px}
+.tools{display:grid;grid-template-columns:1fr 1fr;column-gap:36px;margin-bottom:30px}
+.tl{display:flex;gap:14px;align-items:center;text-align:left;background:none;border:0;border-top:1px solid var(--border);padding:14px 4px;cursor:pointer;color:var(--text)}
+.tl svg{color:var(--primary);width:22px;height:22px}
+.tl b{display:block;font-size:15px}.tl small{color:var(--muted);font-size:13px}
+.tl:hover b{color:var(--primary-d)}
+.login{padding:0;grid-template-columns:minmax(0,1fr) minmax(0,1fr);place-items:stretch}
+.lg-art{background:radial-gradient(circle at 68% 82%,#e9c46a 0 110px,transparent 112px),linear-gradient(180deg,#264653 0%,#3d5f68 42%,#e76f51 82%,#f4a261 100%);color:#fff;display:flex;flex-direction:column;justify-content:flex-start;padding:56px;min-height:100vh}
+.lg-art h2{color:#fff;font-size:clamp(28px,3.2vw,42px);line-height:1.15;max-width:420px}
+.lg-art p{margin:16px 0 0;color:#f6e7d3;max-width:360px;font-size:15px}
+.login .box{align-self:center;justify-self:center;margin:24px;background:transparent;border:0;box-shadow:none}
+#tabbar{display:none}
+@media(max-width:900px){
+  main{padding:16px 16px 96px}
+  .lead-row,.tools{grid-template-columns:1fr}
+  .lead-panel{padding:22px}.lead-panel .hi-big .n{font-size:64px}
+  .login{grid-template-columns:1fr}.lg-art{display:none}
+  #tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--card);border-top:1px solid var(--border);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+  #tabbar button{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;color:var(--muted);font-size:11.5px;font-weight:600;padding:6px 0;cursor:pointer}
+  #tabbar button.on{color:var(--primary-d)}
+  #tabbar button.on svg{background:var(--soft);border-radius:99px;padding:3px 14px;box-sizing:content-box;width:20px}
+  #burger{display:none}
+}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="login" class="login hidden">
+  <aside class="lg-art"><h2>Jurnal, kehadiran, dan nilai kelas Anda, tersimpan rapi.</h2><p>Masuk dengan akun yang dibuat oleh admin sekolah.</p></aside>
   <div class="card box">
     <div class="row" style="justify-content:space-between">
       <div class="logo" id="logo"></div>
@@ -259,6 +305,9 @@ td input.sc{width:70px}
     </div>
     <section id="view"></section>
   </main>
+  <nav id="tabbar" aria-label="Menu utama">
+    <button data-go="beranda" data-i="home">Beranda</button><button data-go="jurnal" data-i="book">Jurnal</button><button data-go="hadir" data-i="check">Hadir</button><button data-go="nilai" data-i="calc">Nilai</button><button id="tabMenu" data-i="menu">Menu</button>
+  </nav>
 </div>
 
 <div id="modal" class="modal hidden"><div class="sheet" id="sheet"></div></div>
@@ -427,6 +476,8 @@ function buildNav() {
 $('#logout').innerHTML = ico('out') + '<span>Keluar</span>';
 $('#burger').innerHTML = ico('menu');
 $('#nav').onclick = e => { const b = e.target.closest('[data-p]'); if (b) go(b.dataset.p); };
+$$('#tabbar [data-i]').forEach(b => b.insertAdjacentHTML('afterbegin', ico(b.dataset.i)));
+$('#tabMenu').onclick = () => $('#burger').click();
 $('#burger').onclick = () => { $('#side').classList.add('open'); $('#scrim').classList.add('open'); };
 $('#scrim').onclick = closeSide;
 function closeSide() { $('#side').classList.remove('open'); $('#scrim').classList.remove('open'); }
@@ -437,6 +488,7 @@ const PAGES = { beranda: pBeranda, jurnal: pJurnal, hadir: pHadir, nilai: pNilai
 async function go(p) {
   PAGE = p; closeSide();
   $$('#nav .nav').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  $$('#tabbar [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === p));
   const v = $('#view'); v.onclick = v.onchange = v.oninput = null;
   v.innerHTML = '<div class="loading">Memuat…</div>';
   window.scrollTo(0, 0);
@@ -450,28 +502,29 @@ async function pBeranda() {
   const tHari = d.hariIni.H + d.hariIni.S + d.hariIni.I + d.hariIni.A;
   const pct = tHari ? Math.round(d.hariIni.H / tHari * 100) + '%' : '—';
   const dt = new Date();
+  const jam = dt.getHours(), sapa = jam < 11 ? 'pagi' : jam < 15 ? 'siang' : jam < 18 ? 'sore' : 'malam';
   const maxBar = Math.max(1, ...d.minggu.map(m => m.total));
   const quick = [['jurnal', 'book', 'Jurnal Mengajar', 'Catat materi dan catatan tiap pertemuan'], ['hadir', 'check', 'Daftar Hadir', 'Cek dan ekspor kehadiran siswa'], ['nilai', 'calc', 'Kalkulator Nilai', 'Hitung rata-rata, ranking, dan distribusi nilai'], ['picker', 'shuffle', 'Pemilih Nama Acak', 'Pilih nama acak dengan animasi slot machine'], ['tim', 'users', 'Pembagi Kelompok', 'Bagi siswa ke dalam kelompok acak secara instan'], ['rpp', 'book', 'Generator RPP', 'Susun draf modul ajar dan ekspor ke Word atau PDF'], ['karya', 'user', 'Portofolio Siswa', 'Simpan foto karya siswa dan ekspor ke PDF'], ['kartu', 'check', 'Kartu Laporan', 'Buat kartu perkembangan untuk orang tua']];
   $('#view').innerHTML = `
-    <div class="ph"><div><h2>Halo, ${esc(S.user.nama.split(' ')[0])}!</h2><div class="muted">${HARI[dt.getDay()]}, ${fmtTgl(today())}</div></div></div>
+    <div class="ph"><div><h2>Selamat ${sapa}, ${esc(S.user.nama.split(' ')[0])}</h2><div class="muted">${HARI[dt.getDay()]}, ${fmtTgl(today())}</div></div></div>
     ${S.user.pwAwal ? '<div class="card" style="margin-bottom:16px;border-color:var(--warn)"><div class="row"><span class="grow"><b>Anda masih memakai password awal.</b> Segera ganti di menu Pengaturan agar akun lebih aman.</span><button class="btn sm" data-go="pengaturan">Ganti sekarang</button></div></div>' : ''}${d.menunggu ? `<div class="card" style="margin-bottom:16px;border-color:var(--warn)"><div class="row"><span class="grow"><b>${d.menunggu} pengajuan hapus akun</b> menunggu persetujuan Anda.</span><button class="btn sm" data-go="admin">Tinjau</button></div></div>` : ''}
-    <div class="stats">
-      <div class="card stat"><div class="n">${d.totalSiswa}</div><div class="l">Siswa (${d.laki} L · ${d.perempuan} P)</div></div>
-      <div class="card stat"><div class="n">${d.kelas.length}</div><div class="l">Kelas/Halaqah</div></div>
-      <div class="card stat"><div class="n">${d.jurnalBulanIni}</div><div class="l">Jurnal bulan ini (total ${d.jurnalTotal})</div></div>
-      <div class="card stat"><div class="n">${pct}</div><div class="l">Hadir hari ini${tHari ? ` (${d.hariIni.H}/${tHari})` : ''}</div></div>
-    </div>
-    <div class="quick">${quick.map(q => `<button class="qc" data-go="${q[0]}"><div class="ic">${ico(q[1])}</div><h4>${q[2]}</h4><p>${q[3]}</p></button>`).join('')}</div>
-    <div class="two">
+    <div class="two lead-row">
       <div class="card"><h3>Kehadiran 7 hari terakhir</h3>
         <div class="bars">${d.minggu.map(m => { const h = m.total ? Math.max(4, m.hadir / maxBar * 100) : 4; const [y, mo, da] = m.tanggal.split('-'); return `<div class="bar" title="${m.hadir} hadir dari ${m.total}"><span>${m.total ? m.hadir : ''}</span><i class="${m.total ? '' : 'none'}" style="height:${h}%"></i><span>${+da}/${+mo}</span></div>`; }).join('')}</div>
         <div class="muted" style="font-size:12px;margin-top:8px">Jumlah siswa hadir per hari</div></div>
-      <div class="card hi"><div class="hi-h"><h3>Kehadiran hari ini</h3><span class="muted">${fmtTgl(today())}</span></div>
+      <div class="card hi lead-panel"><div class="hi-h"><h3>Kehadiran hari ini</h3><span class="muted">${fmtTgl(today())}</span></div>
         ${tHari ? `<div class="hi-big"><span class="n">${pct}</span><span class="muted">${d.hariIni.H} dari ${tHari} siswa hadir</span></div>
         <div class="hi-bar">${SEG.map(s => d.hariIni[s[0]] ? `<i style="flex:${d.hariIni[s[0]]};background:${s[2]}"></i>` : '').join('')}</div>
         <div class="hi-grid">${SEG.map(s => `<div class="hi-t"><span class="dot" style="background:${s[2]}"></span><span>${s[1]}</span><b>${d.hariIni[s[0]]}</b></div>`).join('')}</div>` : '<div class="empty">Belum ada absensi hari ini.<br><br><button class="btn" data-go="hadir">Isi daftar hadir</button></div>'}
       </div>
     </div>
+    <div class="figs">
+      <div><b>${d.totalSiswa}</b><span>siswa (${d.laki} laki-laki, ${d.perempuan} perempuan)</span></div>
+      <div><b>${d.kelas.length}</b><span>kelas/halaqah</span></div>
+      <div><b>${d.jurnalBulanIni}</b><span>jurnal bulan ini, ${d.jurnalTotal} seluruhnya</span></div>
+    </div>
+    <h3 class="sec">Alat mengajar</h3>
+    <div class="tools">${quick.map(q => `<button class="tl" data-go="${q[0]}">${ico(q[1])}<span><b>${q[2]}</b><small>${q[3]}</small></span></button>`).join('')}</div>
     <div class="two">
       <div class="card"><h3>Jurnal terbaru</h3>
         ${d.jurnalTerbaru.length ? d.jurnalTerbaru.map(j => `<div class="list-i"><span class="badge">${fmtTgl(j.tanggal)}</span><div><b>${esc(j.materi)}</b><div class="muted" style="font-size:13px">${esc([j.kelas, j.mapel].filter(Boolean).join(' • '))}</div></div></div>`).join('') : '<div class="empty">Belum ada jurnal.</div>'}
@@ -1486,7 +1539,7 @@ async function pKartu() {
       const cv = document.createElement('canvas'), c = cv.getContext('2d'); cv.width = 800;
       const bungkus = (t, mx) => { const out = []; let b = ''; t.split(/\s+/).forEach(w => { const u = b ? b + ' ' + w : w; if (c.measureText(u).width > mx && b) { out.push(b); b = w; } else b = u; }); if (b) out.push(b); return out; };
       c.font = '20px sans-serif'; const bar = cat ? bungkus(cat, 720) : []; cv.height = 560 + (bar.length ? 50 + bar.length * 28 : 0);
-      c.fillStyle = '#fff'; c.fillRect(0, 0, 800, cv.height); const gr = c.createLinearGradient(0, 0, 800, 110); gr.addColorStop(0, '#62045c'); gr.addColorStop(0.5, '#cf005e'); gr.addColorStop(1, '#fc1444'); c.fillStyle = gr; c.fillRect(0, 0, 800, 110);
+      c.fillStyle = '#fff'; c.fillRect(0, 0, 800, cv.height); const gr = c.createLinearGradient(0, 0, 800, 110); gr.addColorStop(0, '#264653'); gr.addColorStop(0.5, '#e76f51'); gr.addColorStop(1, '#f4a261'); c.fillStyle = gr; c.fillRect(0, 0, 800, 110);
       c.fillStyle = '#fff'; c.font = 'bold 30px sans-serif'; c.fillText('Laporan Perkembangan Siswa', 40, 55); c.font = '20px sans-serif'; c.fillText(per, 40, 88);
       c.fillStyle = '#111'; c.font = 'bold 30px sans-serif'; c.fillText(s.nama, 40, 165); c.fillStyle = '#555'; c.font = '20px sans-serif'; c.fillText('Kelas/Halaqah: ' + h.nama, 40, 198);
       c.fillStyle = '#111'; c.font = 'bold 22px sans-serif'; c.fillText(`Kehadiran (${rk.hari} pertemuan)`, 40, 245);
