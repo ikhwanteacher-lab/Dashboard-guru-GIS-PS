@@ -221,6 +221,8 @@ td input.sc{width:70px}
 .ph h2,.login h1{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 
 @media(max-width:900px){.filters>div{flex:1 1 150px;min-width:0}.filters select,.filters input{width:100%;min-width:0}}
+
+@media(max-width:520px){.quick .qc:last-child:nth-child(odd){grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -394,7 +396,9 @@ async function showLogin() {
     ${reg ? '<div class="fld"><label class="f">Nama lengkap</label><input name="nama" required autocomplete="name"></div>' : ''}
     <div class="fld"><label class="f">Email</label><input name="username" type="email" required autocomplete="username" autocapitalize="none"></div>
     <div class="fld"><label class="f">Password</label><input name="password" type="password" required minlength="${reg ? 6 : 1}" autocomplete="${reg ? 'new-password' : 'current-password'}"></div>
-    <button class="btn" style="width:100%" id="lb">${reg ? 'Buat akun & masuk' : 'Masuk'}</button>`;
+    <button class="btn" style="width:100%" id="lb">${reg ? 'Buat akun & masuk' : 'Masuk'}</button>
+    <p class="muted" style="text-align:center;margin:14px 0 0">Guru baru? <a href="#" id="goReg" style="color:var(--primary);font-weight:600">Daftar</a> · Lupa password? Hubungi admin.</p>`;
+  $('#goReg').onclick = e => { e.preventDefault(); fxDaftar(); };
   f.onsubmit = async e => {
     e.preventDefault(); const b = $('#lb'); b.disabled = true;
     try {
@@ -447,10 +451,10 @@ async function pBeranda() {
   const pct = tHari ? Math.round(d.hariIni.H / tHari * 100) + '%' : '—';
   const dt = new Date();
   const maxBar = Math.max(1, ...d.minggu.map(m => m.total));
-  const quick = [['jurnal', 'book', 'Jurnal Mengajar', 'Catat materi dan catatan tiap pertemuan'], ['hadir', 'check', 'Daftar Hadir', 'Cek dan ekspor kehadiran siswa'], ['nilai', 'calc', 'Kalkulator Nilai', 'Hitung rata-rata, ranking, dan distribusi nilai'], ['picker', 'shuffle', 'Pemilih Nama Acak', 'Pilih nama acak dengan animasi slot machine'], ['tim', 'users', 'Pembagi Kelompok', 'Bagi siswa ke dalam kelompok acak secara instan']];
+  const quick = [['jurnal', 'book', 'Jurnal Mengajar', 'Catat materi dan catatan tiap pertemuan'], ['hadir', 'check', 'Daftar Hadir', 'Cek dan ekspor kehadiran siswa'], ['nilai', 'calc', 'Kalkulator Nilai', 'Hitung rata-rata, ranking, dan distribusi nilai'], ['picker', 'shuffle', 'Pemilih Nama Acak', 'Pilih nama acak dengan animasi slot machine'], ['tim', 'users', 'Pembagi Kelompok', 'Bagi siswa ke dalam kelompok acak secara instan'], ['rpp', 'book', 'Generator RPP', 'Susun draf modul ajar dan ekspor ke Word atau PDF'], ['karya', 'user', 'Portofolio Siswa', 'Simpan foto karya siswa dan ekspor ke PDF'], ['kartu', 'check', 'Kartu Laporan', 'Buat kartu perkembangan untuk orang tua']];
   $('#view').innerHTML = `
     <div class="ph"><div><h2>Halo, ${esc(S.user.nama.split(' ')[0])}!</h2><div class="muted">${HARI[dt.getDay()]}, ${fmtTgl(today())}</div></div></div>
-    ${d.menunggu ? `<div class="card" style="margin-bottom:16px;border-color:var(--warn)"><div class="row"><span class="grow"><b>${d.menunggu} pengajuan hapus akun</b> menunggu persetujuan Anda.</span><button class="btn sm" data-go="admin">Tinjau</button></div></div>` : ''}
+    ${S.user.pwAwal ? '<div class="card" style="margin-bottom:16px;border-color:var(--warn)"><div class="row"><span class="grow"><b>Anda masih memakai password awal.</b> Segera ganti di menu Pengaturan agar akun lebih aman.</span><button class="btn sm" data-go="pengaturan">Ganti sekarang</button></div></div>' : ''}${d.menunggu ? `<div class="card" style="margin-bottom:16px;border-color:var(--warn)"><div class="row"><span class="grow"><b>${d.menunggu} pengajuan hapus akun</b> menunggu persetujuan Anda.</span><button class="btn sm" data-go="admin">Tinjau</button></div></div>` : ''}
     <div class="stats">
       <div class="card stat"><div class="n">${d.totalSiswa}</div><div class="l">Siswa (${d.laki} L · ${d.perempuan} P)</div></div>
       <div class="card stat"><div class="n">${d.kelas.length}</div><div class="l">Kelas/Halaqah</div></div>
@@ -1277,10 +1281,21 @@ async function adminSiswa() {
 /* ============ Admin & Wali (Firebase) ============ */
 const jrTabel = (a, g) => a.length ? `<div class="card"><div class="tw"><table><thead><tr><th>Tanggal</th>${g ? '<th>Guru</th>' : ''}<th>Kelas</th><th>Mapel</th><th>Materi</th><th>Hadir</th></tr></thead><tbody>${a.map(j => `<tr><td>${fmtTgl(j.tanggal)}</td>${g ? `<td>${esc(j.guru)}</td>` : ''}<td>${esc(j.kelas)}</td><td>${esc(j.mapel || '')}</td><td>${esc(j.materi)}${j.kendala ? `<div class="muted" style="font-size:12px">Kendala: ${esc(j.kendala)}</div>` : ''}</td><td>${j.hadir !== '' && j.hadir != null ? esc(j.hadir) + (j.total ? '/' + j.total : '') : '—'}</td></tr>`).join('')}</tbody></table></div></div>` : '<div class="card empty">Belum ada jurnal.</div>';
 async function pAdminFB() {
-  const v = $('#view'), L = await call('adminGuru');
-  v.innerHTML = `<div class="ph"><h2>Panel Admin</h2><button class="btn" id="ex">Ekspor semua jurnal (CSV)</button></div><div class="card"><p class="muted" style="margin-top:0">Guru baru muncul di sini setelah masuk pertama kali dan baru bisa memakai aplikasi setelah disetujui. Data guru hanya bisa dilihat, tidak bisa diubah.</p><div class="tw"><table><thead><tr><th>Guru</th><th>Status</th><th>Wali kelas</th><th class="num">Jurnal</th><th>Terakhir</th><th></th></tr></thead><tbody>${L.map(g => `<tr><td>${esc(g.nama)}<div class="muted" style="font-size:12px">${esc(g.email)}</div></td><td><span class="badge ${g.aktif ? '' : 'P'}">${g.aktif ? 'Aktif' : 'Menunggu'}</span></td><td>${esc((g.wali || []).join(', ')) || '—'}</td><td class="num">${g.jurnal}</td><td>${g.terakhir ? fmtTgl(g.terakhir) : '—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-v="${g.uid}">Lihat</button> <button class="btn ghost sm" data-n="${g.uid}">Ubah nama</button> <button class="btn ghost sm" data-w="${g.uid}">Wali kelas</button> <button class="btn ghost sm" data-a="${g.uid}" data-s="${g.aktif ? 0 : 1}">${g.aktif ? 'Nonaktifkan' : 'Setujui'}</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada guru.</td></tr>'}</tbody></table></div></div>`;
+  const v = $('#view'), [L, U] = await Promise.all([call('adminGuru'), call('undanganList')]);
+  v.innerHTML = `<div class="ph"><h2>Panel Admin</h2><button class="btn" id="ex">Ekspor semua jurnal (CSV)</button></div><div class="card"><p class="muted" style="margin-top:0">Guru baru muncul di sini setelah masuk pertama kali dan baru bisa memakai aplikasi setelah disetujui. Data guru hanya bisa dilihat, tidak bisa diubah.</p><div class="tw"><table><thead><tr><th>Guru</th><th>Status</th><th>Wali kelas</th><th class="num">Jurnal</th><th>Terakhir</th><th></th></tr></thead><tbody>${L.map(g => `<tr><td>${esc(g.nama)}<div class="muted" style="font-size:12px">${esc(g.email)}</div></td><td><span class="badge ${g.aktif ? '' : 'P'}">${g.aktif ? 'Aktif' : 'Menunggu'}</span></td><td>${esc((g.wali || []).join(', ')) || '—'}</td><td class="num">${g.jurnal}</td><td>${g.terakhir ? fmtTgl(g.terakhir) : '—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-v="${g.uid}">Lihat</button> <button class="btn ghost sm" data-n="${g.uid}">Ubah nama</button> <button class="btn ghost sm" data-w="${g.uid}">Wali kelas</button> <button class="btn ghost sm" data-a="${g.uid}" data-s="${g.aktif ? 0 : 1}">${g.aktif ? 'Nonaktifkan' : 'Setujui'}</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada guru.</td></tr>'}</tbody></table></div></div>
+  <div class="card" style="margin-top:16px"><h3 style="margin:0 0 6px">Email yang boleh mendaftar</h3><p class="muted" style="margin-top:0;font-size:13px">Hanya email di daftar ini yang bisa membuat akun guru. Satu baris satu email, nama boleh ditambahkan setelah titik koma, mis. guru.mtk@gistrav.com; Budi Santoso</p><textarea id="ut" rows="4" style="width:100%;font-family:inherit" placeholder="guru.mtk@gistrav.com; Budi Santoso"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="utb">Tambahkan</button></div><div class="tw" style="margin-top:12px"><table><thead><tr><th>Email</th><th>Nama</th><th>Status</th><th></th></tr></thead><tbody>${U.map(u => { const d = L.some(g => String(g.email || '').toLowerCase() === u.email); return `<tr><td>${esc(u.email)}</td><td>${esc(u.nama || '')}</td><td><span class="badge ${d ? '' : 'P'}">${d ? 'Sudah mendaftar' : 'Belum mendaftar'}</span></td><td style="text-align:right"><button class="btn ghost sm" data-ud="${esc(u.email)}">Hapus</button></td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">Daftar masih kosong, jadi belum ada yang bisa mendaftar.</td></tr>'}</tbody></table></div></div>`;
   v.onclick = async e => {
     if (e.target.closest('#ex')) { try { const r = await call('adminJurnalSemua'); fxUnduh('jurnal-semua-guru.csv', fxCsv(r, fxJcols), 'text/csv;charset=utf-8'); } catch (er) { toast(er.message, 'err'); } return; }
+    if (e.target.closest('#utb')) {
+      try {
+        const items = $('#ut').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [em, ...n] = l.split(/[;,\t]/); return { email: em.trim().toLowerCase(), nama: n.join(' ').trim() }; });
+        if (!items.length) return toast('Isi minimal satu email.', 'err');
+        const r = await call('undanganTambah', { items }); toast(r.ok + ' email ditambahkan' + (r.salah.length ? ', ' + r.salah.length + ' dilewati karena bukan @gistrav.com' : '') + '.'); pAdminFB();
+      } catch (er) { toast(er.message, 'err'); }
+      return;
+    }
+    const ud = e.target.closest('[data-ud]');
+    if (ud) { if (await confirmBox('Hapus ' + ud.dataset.ud + ' dari daftar? Akun yang sudah dibuat tidak ikut terhapus.')) { try { await call('undanganHapus', { email: ud.dataset.ud }); pAdminFB(); } catch (er) { toast(er.message, 'err'); } } return; }
     const b = e.target.closest('[data-v],[data-w],[data-a],[data-n]'); if (!b) return;
     const g = L.find(x => x.uid === (b.dataset.v || b.dataset.w || b.dataset.a || b.dataset.n));
     try {
@@ -1388,15 +1403,15 @@ function pRpp() {
     if (!f.k || !f.m || !f.t) return toast('Isi kelas/semester, mata pelajaran, dan topik.', 'err');
     $('#ro').innerHTML = `<div class="card"><textarea id="rx" rows="28" style="width:100%;font-family:inherit"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="rw1">Unduh Word (.doc)</button><button class="btn ghost" id="rw2">Cetak / simpan PDF</button></div><p class="muted" style="font-size:13px;margin:8px 0 0">Baris berawalan # adalah judul, - adalah butir daftar, dan | adalah baris tabel (kolom dipisah tanda |).</p></div>`;
     $('#rx').value = fxRppTeks(f);
-    const html = () => `<html><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}h1{text-align:center}h2{font-size:14pt;margin-top:16pt;border-bottom:1px solid #999}h3{font-size:12pt;margin-top:12pt}h4{font-size:11pt;margin:10pt 0 4pt}th{background:#eee}</style></head><body>${fxRppHtml($('#rx').value)}</body></html>`;
+    const html = pr => `<html><head><meta charset="utf-8"><title>Modul Ajar</title><style>${pr ? '@page{size:A4;margin:0}body{padding:16mm}' : ''}body{font-family:Calibri,Arial,sans-serif;font-size:11pt}h1{text-align:center}h2{font-size:14pt;margin-top:16pt;border-bottom:1px solid #999}h3{font-size:12pt;margin-top:12pt}h4{font-size:11pt;margin:10pt 0 4pt}th{background:#eee}</style></head><body>${fxRppHtml($('#rx').value)}</body></html>`;
     $('#rw1').onclick = () => fxUnduh('Modul-Ajar-' + f.t.replace(/\W+/g, '-') + '.doc', html(), 'application/msword');
-    $('#rw2').onclick = () => { const w = window.open('', '_blank'); if (!w) return toast('Izinkan pop-up untuk mencetak.', 'err'); w.document.write(html()); w.document.close(); w.focus(); w.print(); };
+    $('#rw2').onclick = () => { const w = window.open('', '_blank'); if (!w) return toast('Izinkan pop-up untuk mencetak.', 'err'); w.document.write(html(true)); w.document.close(); w.focus(); setTimeout(() => w.print(), 400); };
   };
 }
 const fxKecil = f => new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(f); im.onload = () => { const k = Math.min(1, 1000 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok(c.toDataURL('image/jpeg', 0.7)); }; im.onerror = () => no(new Error('Gambar tidak bisa dibaca.')); im.src = u; });
 async function pKarya() {
   await muatSiswa(); const v = $('#view'), H = S.halaqah;
-  v.innerHTML = `<div class="ph"><h2>Portofolio Siswa</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto</label><div class="row"><button type="button" class="btn ghost" id="kam">Ambil foto (kamera)</button><label class="btn ghost" for="kf" style="cursor:pointer">Pilih dari galeri</label></div><input id="kf" type="file" accept="image/*" multiple hidden><input id="kf1" type="file" accept="image/*" capture="environment" hidden><div class="muted" id="kn" style="font-size:13px;margin-top:6px"></div></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div id="kg"></div>`;
+  v.innerHTML = `<div class="ph"><h2>Portofolio Siswa</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto</label><div class="row"><button type="button" class="btn ghost" id="kam">Ambil foto (kamera)</button><label class="btn ghost" for="kf" style="cursor:pointer">Pilih dari galeri</label></div><input id="kf" type="file" accept="image/*" multiple hidden><input id="kf1" type="file" accept="image/*" capture="environment" hidden><div class="muted" id="kn" style="font-size:13px;margin-top:6px"></div></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Ekspor portofolio ke PDF</label><select id="kx"><option value="siswa">Siswa yang dipilih</option><option value="kelas">Seluruh kelas/halaqah ini</option><option value="custom">Pilih siswa sendiri (custom)</option></select></div><button class="btn" id="kp" style="align-self:flex-end">Buat PDF</button></div><div id="kcl" class="hidden" style="max-height:220px;overflow:auto;margin-top:10px"></div><p class="muted" style="font-size:13px;margin:8px 0 0">Jendela cetak akan terbuka. Pilih "Simpan sebagai PDF" sebagai printer. Pada mode kelas dan custom, siswa yang belum punya foto dilewati.</p></div><div id="kg"></div>`;
   let L = [];
   const gal = async () => {
     const id = $('#kb').value, g = $('#kg');
@@ -1407,6 +1422,26 @@ async function pKarya() {
   const isi = () => { $('#kb').innerHTML = S.siswa.filter(s => s.halaqahId === $('#ka').value).sort((a, b) => a.nama.localeCompare(b.nama, 'id')).map(s => `<option value="${s.id}">${esc(s.nama)}</option>`).join(''); gal(); };
   $('#ka').onchange = isi; $('#kb').onchange = gal;
   let pending = [];
+  const daftarCustom = () => { const seen = new Set(); $('#kcl').innerHTML = '<label class="row" style="gap:6px"><input type="checkbox" id="kall"> <b>Pilih semua</b></label>' + H.map(h => { const m = S.siswa.filter(s => s.halaqahId === h.id && !seen.has(s.id)); m.forEach(s => seen.add(s.id)); return m.length ? `<div class="muted" style="margin:8px 0 2px;font-size:13px">${esc(h.nama)}</div>` + m.map(s => `<label class="row" style="gap:6px"><input type="checkbox" value="${s.id}"> ${esc(s.nama)}</label>`).join('') : ''; }).join(''); $('#kall').onchange = e => $('#kcl').querySelectorAll('input[value]').forEach(i => { i.checked = e.target.checked; }); };
+  $('#kx').onchange = () => { const c = $('#kx').value === 'custom'; $('#kcl').classList.toggle('hidden', !c); if (c) daftarCustom(); };
+  $('#kp').onclick = async () => {
+    const mode = $('#kx').value;
+    let ids = mode === 'siswa' ? [$('#kb').value] : mode === 'kelas' ? S.siswa.filter(s => s.halaqahId === $('#ka').value).map(s => s.id) : [...$('#kcl').querySelectorAll('input[value]:checked')].map(i => i.value);
+    ids = [...new Set(ids.filter(Boolean))]; if (!ids.length) return toast('Pilih siswa dulu.', 'err');
+    const w = window.open('', '_blank'); if (!w) return toast('Izinkan pop-up untuk membuat PDF.', 'err');
+    w.document.write('<p style="font-family:sans-serif">Menyiapkan portofolio…</p>');
+    try {
+      const mur = ids.map(id => S.siswa.find(s => s.id === id)).filter(Boolean).sort((a, b) => a.nama.localeCompare(b.nama, 'id')), data = [];
+      for (const s of mur) data.push({ s, k: await call('karyaList', { siswaId: s.id }) });
+      const pakai = mode === 'siswa' ? data : data.filter(d => d.k.length);
+      if (!pakai.length) { w.close(); return toast('Tidak ada foto karya pada siswa yang dipilih.', 'err'); }
+      const css = '@page{size:A4;margin:0}body{font-family:Arial,sans-serif;margin:0;padding:14mm}.s{page-break-after:always}.s:last-child{page-break-after:auto}h1{font-size:17pt;margin:0 0 1mm}.m{color:#555;font-size:10pt;margin-bottom:5mm}.g{display:grid;grid-template-columns:1fr 1fr;gap:4mm}.k{break-inside:avoid;border:1px solid #ccc;border-radius:2mm;padding:2mm}.k img{width:100%;max-height:85mm;object-fit:contain}.k div{font-size:9pt;margin-top:1mm}';
+      const body = pakai.map(d => `<section class="s"><h1>Portofolio ${esc(d.s.nama)}</h1><div class="m">Kelas: ${esc(d.s.kelasAsli || d.s.kelas)} · ${d.k.length} karya</div>${d.k.length ? `<div class="g">${d.k.map(k => `<div class="k"><img src="${k.foto}"><div><b>${esc(k.label || 'Tanpa label')}</b> · ${fmtTgl(k.tanggal)}</div></div>`).join('')}</div>` : '<p>Belum ada karya.</p>'}</section>`).join('');
+      w.document.open(); w.document.write(`<html><head><meta charset="utf-8"><title>Portofolio Siswa</title><style>${css}</style></head><body>${body}</body></html>`); w.document.close();
+      await Promise.all([...w.document.images].map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })));
+      w.focus(); w.print();
+    } catch (er) { try { w.close(); } catch (e) {} toast(er.message, 'err'); }
+  };
   const info = () => { $('#kn').textContent = pending.length ? pending.length + ' foto siap disimpan' : ''; };
   $('#kf').onchange = $('#kf1').onchange = e => { pending.push(...e.target.files); e.target.value = ''; info(); };
   $('#kam').onclick = async () => {
@@ -1520,6 +1555,25 @@ const fxPisah = (p, mode, n) => {
   return g;
 };
 
+/* ============ Pendaftaran guru & lupa password ============ */
+function fxDaftar() {
+  $('#loginSub').textContent = 'Daftar akun guru dengan email sekolah.';
+  const f = $('#loginForm');
+  f.innerHTML = `<div class="fld"><label class="f">Nama lengkap</label><input name="nama" required autocomplete="name"></div><div class="fld"><label class="f">Email sekolah</label><input name="email" type="email" required placeholder="nama@gistrav.com" autocapitalize="none" autocomplete="username"></div><p class="muted" style="font-size:13px;margin:0 0 12px">Password awal sama dengan nama sebelum tanda @ pada email Anda (minimal 6 karakter). Email Anda harus sudah didaftarkan admin. Segera ganti password di menu Pengaturan setelah masuk. Akun baru perlu persetujuan admin sebelum bisa dipakai.</p><button class="btn" style="width:100%" id="lb">Daftar</button><p class="muted" style="text-align:center;margin:14px 0 0"><a href="#" id="goLog" style="color:var(--primary);font-weight:600">Kembali ke halaman masuk</a></p>`;
+  $('#goLog').onclick = e => { e.preventDefault(); showLogin(); };
+  f.onsubmit = async e => {
+    e.preventDefault(); const b = $('#lb'); b.disabled = true;
+    try {
+      const d = Object.fromEntries(new FormData(f)); await call('register', d);
+      f.innerHTML = `<div class="card" style="text-align:center"><b>Pendaftaran berhasil</b><p class="muted" style="margin:8px 0 0">Akun ${esc(d.email)} sudah terdaftar. Tunggu admin menyetujuinya, lalu masuk dengan email dan password awal Anda.</p></div><button type="button" class="btn" style="width:100%;margin-top:12px" id="lk">Ke halaman masuk</button>`;
+      $('#lk').onclick = showLogin;
+    } catch (er) { toast(er.message, 'err'); b.disabled = false; }
+  };
+}
+function fxLupa() {
+  modal('Lupa password', '<div class="fld"><label class="f">Email sekolah</label><input name="email" type="email" required placeholder="nama@gistrav.com"></div><p class="muted" style="font-size:13px;margin:0">Tautan untuk membuat password baru akan dikirim ke email itu.</p>', async d => { await call('resetPassword', d); toast('Jika email terdaftar, tautan reset sudah dikirim. Cek juga folder spam.'); });
+}
+
 /* ============ Mulai ============ */
 (async function boot() {
   if (TOKEN) {
@@ -1530,7 +1584,7 @@ const fxPisah = (p, mode, n) => {
 </script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
@@ -1556,11 +1610,14 @@ let ME = { nama: '' };
 const prof = async u => {
   const [a, w, g] = await Promise.all([getDoc(doc(db, 'admins', u.uid)), getDoc(doc(db, 'wali', u.uid)), getDoc(doc(db, 'guru', u.uid))]);
   const admin = a.exists(), nama = u.displayName || u.email.split('@')[0];
+  if (!admin) {
+    if (!/@gistrav\.com$/i.test(u.email)) { await signOut(auth); throw new Error('Hanya email @gistrav.com yang dapat dipakai.'); }
+  }
   if (!g.exists()) await setDoc(doc(db, 'guru', u.uid), { nama, email: u.email, aktif: admin, dibuat: Date.now() });
   if (!(admin || (g.exists() && g.data().aktif === true))) { await signOut(auth); throw new Error('Akun Anda menunggu persetujuan admin.'); }
   try { localStorage.setItem('dg_last', String(Date.now())); } catch (e) {}
   ME.nama = (g.exists() && g.data().nama) || nama;
-  return { nama: ME.nama, admin, wali: w.exists() ? (w.data().kelas || []) : [] };
+  return { nama: ME.nama, admin, pwAwal: g.exists() && g.data().pwAwal === true, wali: w.exists() ? (w.data().kelas || []) : [] };
 };
 const load = async () => { const [s, h] = await Promise.all([all('siswa'), all('halaqah')]); return { s, h, m: new Map(s.map(x => [x.id, x])) }; };
 const members = (g, m) => (g.anggota || []).map(i => m.get(i)).filter(Boolean);
@@ -1586,13 +1643,27 @@ const A = {
     catch (e) { throw new Error(e.code === 'auth/network-request-failed' ? 'Tidak ada koneksi internet.' : 'Email atau password salah.'); }
     return { token: 'fb', user: await prof(auth.currentUser) };
   },
-  register: async () => { throw new Error('Akun dibuat lewat Firebase Console (Authentication > Users).'); },
+  register: async p => {
+    const em = String(p.email || '').trim().toLowerCase(), nama = String(p.nama || '').trim();
+    if (!nama) throw new Error('Nama lengkap wajib diisi.');
+    if (!/^[^@\s]+@gistrav\.com$/.test(em)) throw new Error('Gunakan email sekolah berakhiran @gistrav.com.');
+    const pw = em.split('@')[0];
+    if (pw.length < 6) throw new Error('Nama sebelum @ minimal 6 karakter agar bisa dipakai sebagai password awal. Hubungi admin.');
+    let c; try { c = await createUserWithEmailAndPassword(auth, em, pw); } catch (e) { throw new Error(e.code === 'auth/email-already-in-use' ? 'Email ini sudah terdaftar. Silakan masuk.' : 'Pendaftaran gagal. Periksa koneksi internet.'); }
+    await updateProfile(c.user, { displayName: nama }).catch(() => {});
+    try { await setDoc(doc(db, 'guru', c.user.uid), { nama, email: em, aktif: false, pwAwal: true, dibuat: Date.now() }); }
+    catch (e) { await c.user.delete().catch(() => signOut(auth)); throw new Error(e.code === 'permission-denied' ? 'Email ini belum ada di daftar yang diizinkan. Hubungi admin agar email Anda ditambahkan.' : 'Pendaftaran gagal. Coba lagi.'); }
+    await signOut(auth);
+    return { ok: true };
+  },
+  resetPassword: async p => { const em = String(p.email || '').trim(); if (!em) throw new Error('Isi email Anda.'); await sendPasswordResetEmail(auth, em).catch(() => {}); },
   logout: async () => signOut(auth),
   ubahPassword: async p => {
     const u = auth.currentUser;
     try { await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, p.lama)); }
     catch (e) { throw new Error('Password lama salah.'); }
     await updatePassword(u, p.baru);
+    await updateDoc(doc(db, 'guru', u.uid), { pwAwal: false }).catch(() => {});
   },
 
   siswaList: async () => { const { s, h, m } = await load(); return h.flatMap(g => members(g, m).map(x => ({ id: x.id, nama: x.nama, kelas: g.nama, kelasAsli: x.kelas, gender: x.gender || '', halaqahId: g.id }))); },
@@ -1671,6 +1742,13 @@ const A = {
   karyaList: async p => (await getDocs(query(C('karya'), where('siswaId', '==', p.siswaId)))).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => cmp(b.tanggal, a.tanggal) || (b.dibuat - a.dibuat)),
   karyaSave: async p => { if (p.foto.length > 900000) throw new Error('Foto terlalu besar.'); await addDoc(C('karya'), { siswaId: p.siswaId, label: p.label, foto: p.foto, tanggal: p.tanggal, dibuat: Date.now() }); },
   karyaDelete: async p => deleteDoc(D('karya', p.id)),
+  undanganList: async () => (await getDocs(collection(db, 'undangan'))).docs.map(d => ({ ...d.data(), email: d.id })).sort((a, b) => cmp(a.email, b.email)),
+  undanganTambah: async p => {
+    let ok = 0; const salah = [];
+    for (const i of p.items) { if (!/^[^@\s]+@gistrav\.com$/.test(i.email)) { salah.push(i.email); continue; } await setDoc(doc(db, 'undangan', i.email), { email: i.email, nama: i.nama || '', dibuat: Date.now() }); ok++; }
+    return { ok, salah };
+  },
+  undanganHapus: async p => deleteDoc(doc(db, 'undangan', p.email)),
   siswaInduk: async () => {
     const [s, gs] = await Promise.all([all('siswa'), getDocs(collection(db, 'guru'))]);
     const hs = (await Promise.all(gs.docs.map(d => allOf(d.id, 'halaqah')))).flat(), n = {};
