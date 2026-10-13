@@ -274,6 +274,14 @@ main{padding:26px 44px 70px}
 #nav{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin}
 .side-foot{flex:none}
 .nav{padding-top:8px;padding-bottom:8px}
+
+/* rapor tahfidz: dua kolom surah + skor */
+.tfg{display:grid;grid-template-columns:1fr 1fr;gap:10px 40px}
+.tfi{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(150px,210px);align-items:center;gap:10px}
+.tfn{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.tfs{overflow-wrap:anywhere}
+.tfi select{width:100%}
+@media(max-width:900px){.tfg{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1770,7 +1778,7 @@ async function pTahfidz() {
     massal(); const t = $('#tt');
     if (!cur) { t.innerHTML = '<div class="card empty">Belum ada siswa di kelompok ini.</div>'; return; }
     const r = lap(cur);
-    t.innerHTML = `<div class="card"><div class="muted" style="font-size:13px;margin-bottom:10px">Surah yang dibiarkan "—" tidak dicantumkan di rapor (baris kosong). Pilih "Not Yet Assessed" untuk surah yang tercantum tetapi belum dinilai.</div><div class="tw"><table><thead><tr><th>No</th><th>Surah</th><th>Skor</th></tr></thead><tbody>${dft().map((d, j) => `<tr><td>${j + 1}</td><td>${esc(d.nama)}</td><td><select data-n="${d.key}">${SKOR.map(x => `<option ${(r.skor[d.key] || SKOR[0]) === x ? 'selected' : ''}>${x}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div><div class="fld" style="margin-top:12px"><label class="f">Catatan</label><textarea id="tn" rows="3">${esc(r.catatan)}</textarea></div></div>`;
+    t.innerHTML = `<div class="card"><div class="muted" style="font-size:13px;margin-bottom:10px">Surah yang dibiarkan "—" tidak dicantumkan di rapor (baris kosong). Pilih "Not Yet Assessed" untuk surah yang tercantum tetapi belum dinilai.</div><div class="tfg">${dft().map((d, j) => `<div class="tfi"><span class="tfn">${j + 1}</span><span class="tfs">${esc(d.nama)}</span><select data-n="${d.key}">${SKOR.map(x => `<option ${(r.skor[d.key] || SKOR[0]) === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>`).join('')}</div><div class="fld" style="margin-top:12px"><label class="f">Catatan</label><textarea id="tn" rows="3">${esc(r.catatan)}</textarea></div></div>`;
     kunci();
   };
   const sinkron = () => { if (!cur) return; const sk = {}; $$('#tt [data-n]').forEach(e => { sk[e.dataset.n] = e.value; }); rec[cur.id] = { ...(rec[cur.id] || {}), skor: sk, catatan: $('#tn').value }; };
