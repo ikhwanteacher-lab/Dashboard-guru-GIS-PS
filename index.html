@@ -300,6 +300,23 @@ main{padding:26px 44px 70px}
   .tfi{grid-template-columns:24px minmax(0,1fr) 140px;gap:8px}
   .tfi select{font-size:13px;padding-left:8px;padding-right:6px}
 }
+
+/* HP: kolom Kalkulator Nilai dan Portofolio */
+.filters input[type=checkbox]{width:auto;min-width:0}
+@media(max-width:700px){
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+  .filters>div{min-width:0;flex:none}
+  .filters>div[style*="flex"],.filters>div:has(input[type=checkbox]){grid-column:1/-1}
+  .filters label.row{margin-top:0!important}
+  .filters label.f{line-height:1.25}
+  .kr2{flex-direction:column;align-items:stretch;gap:0}
+  .kfb{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .kfb .btn{width:100%;justify-content:center;text-align:center;min-height:46px}
+  #ku{width:100%;min-height:46px}
+  .kex{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .kex .fld{grid-column:1/-1}
+  .kex .btn{width:100%;justify-content:center;min-height:46px;align-self:stretch!important}
+}
 </style>
 </head>
 <body>
@@ -1525,7 +1542,7 @@ async function pSoal() {
         <div class="muted" style="font-size:12px;margin-bottom:8px">Pilih lingkaran untuk menandai kunci jawaban. Setiap pilihan boleh berupa teks, gambar, atau keduanya.</div></div>
       <div data-t="esai" class="fld"><label class="f">Pedoman jawaban (opsional)</label><textarea name="pedoman" rows="3">${esc(e.pedoman || '')}</textarea>${imgBox('ped', IMG.ped)}</div>
       <div data-t="jodoh"><label class="f">Pasangan (maks. 10), teks dan/atau gambar di tiap sisi</label>
-        ${[...Array(10).keys()].map(i => `<div class="row" data-p="${i}" style="margin-bottom:8px;flex-wrap:wrap"><b>${i + 1}</b><input name="pk${i}" placeholder="Kiri" class="grow" value="${esc((P[i] || {}).kiri || '')}">${imgBox('pk' + i, IMG['pk' + i])}<input name="pb${i}" placeholder="Kanan" class="grow" value="${esc((P[i] || {}).kanan || '')}">${imgBox('pb' + i, IMG['pb' + i])}</div>`).join('')}
+        ${[...Array(10).keys()].map(i => `<div class="row" data-pr="${i}" style="margin-bottom:8px;flex-wrap:wrap"><b>${i + 1}</b><input name="pk${i}" placeholder="Kiri" class="grow" value="${esc((P[i] || {}).kiri || '')}">${imgBox('pk' + i, IMG['pk' + i])}<input name="pb${i}" placeholder="Kanan" class="grow" value="${esc((P[i] || {}).kanan || '')}">${imgBox('pb' + i, IMG['pb' + i])}</div>`).join('')}
         <button type="button" class="btn ghost" id="fp">Tambah pasangan</button></div>`,
       async d => {
         const o = { id: s ? s.id : null, tipe: d.tipe, mapel: (d.mapel || '').trim(), teks: (d.teks || '').trim(), gambar: IMG.q };
@@ -1544,7 +1561,7 @@ async function pSoal() {
         toast(r.salinan ? 'Soal guru lain disimpan sebagai salinan milik Anda.' : 'Soal disimpan.'); await load();
       });
     const sh = $('#sheet');
-    const sync = () => { const t = $('#ft').value, k = +$('#fj').value; $$('[data-t]').forEach(x => x.style.display = x.dataset.t === t ? '' : 'none'); $$('[data-o]').forEach(x => x.style.display = +x.dataset.o < k ? '' : 'none'); $$('[data-p]').forEach(x => x.style.display = +x.dataset.p < np ? '' : 'none'); $('#fp').style.display = np < 10 ? '' : 'none'; };
+    const sync = () => { const t = $('#ft').value, k = +$('#fj').value; $$('[data-t]', sh).forEach(x => x.style.display = x.dataset.t === t ? '' : 'none'); $$('[data-o]', sh).forEach(x => x.style.display = +x.dataset.o < k ? '' : 'none'); $$('[data-pr]', sh).forEach(x => x.style.display = +x.dataset.pr < np ? '' : 'none'); $('#fp').style.display = np < 10 ? '' : 'none'; };
     $('#ft').onchange = $('#fj').onchange = sync; $('#fp').onclick = () => { np++; sync(); }; sync();
     const tampil = (k, on) => { const b = sh.querySelector(`[data-b="${k}"]`), m = b.querySelector('img'); m.src = IMG[k]; m.style.display = on ? '' : 'none'; b.querySelector('button').style.display = on ? '' : 'none'; if (!on) b.querySelector('input').value = ''; };
     sh.onchange = async ev => { const k = ev.target.dataset && ev.target.dataset.k, f = k && ev.target.files[0]; if (!f) return; try { IMG[k] = await soalImg(f); tampil(k, true); } catch (er) { toast(er.message, 'err'); } };
@@ -1592,7 +1609,7 @@ let PKW = false;
 async function pKaryaWali() { PKW = true; try { await pKarya(); } finally { PKW = false; } }
 async function pKarya() {
   await muatSiswa(); const v = $('#view'), wm = PKW, H = PKW ? (S.user.wali || []).map(x => ({ id: 'k:' + x, nama: 'Kelas ' + x })) : S.halaqah, inK = (s, id) => id.startsWith('k:') ? s.kelas === id.slice(2) : s.halaqahId === id;
-  v.innerHTML = `<div class="ph"><h2>${PKW ? 'Portofolio Kelas Wali' : 'Portofolio Siswa'}</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto</label><div class="row"><button type="button" class="btn ghost" id="kam">Ambil foto (kamera)</button><label class="btn ghost" for="kf" style="cursor:pointer">Pilih dari galeri</label></div><input id="kf" type="file" accept="image/*" multiple hidden><input id="kf1" type="file" accept="image/*" capture="environment" hidden><div class="muted" id="kn" style="font-size:13px;margin-top:6px"></div></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Ekspor portofolio ke PDF</label><select id="kx"><option value="siswa">Siswa yang dipilih</option><option value="kelas">Seluruh kelas/halaqah ini</option><option value="custom">Pilih siswa sendiri (custom)</option></select></div><button class="btn" id="kp" style="align-self:flex-end">Buat PDF</button><button class="btn ghost" id="kw">Ekspor Word</button></div><div id="kcl" class="hidden" style="max-height:220px;overflow:auto;margin-top:10px"></div><p class="muted" style="font-size:13px;margin:8px 0 0">Jendela cetak akan terbuka. Pilih "Simpan sebagai PDF" sebagai printer. Pada mode kelas dan custom, siswa yang belum punya foto dilewati.</p></div><div id="kg"></div>`;
+  v.innerHTML = `<div class="ph"><h2>${PKW ? 'Portofolio Kelas Wali' : 'Portofolio Siswa'}</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row kr2"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto</label><div class="row kfb"><button type="button" class="btn ghost" id="kam">Ambil foto (kamera)</button><label class="btn ghost" for="kf" style="cursor:pointer">Pilih dari galeri</label></div><input id="kf" type="file" accept="image/*" multiple hidden><input id="kf1" type="file" accept="image/*" capture="environment" hidden><div class="muted" id="kn" style="font-size:13px;margin-top:6px"></div></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div class="card" style="margin-bottom:14px"><div class="row kex"><div class="fld grow"><label class="f">Ekspor portofolio ke PDF</label><select id="kx"><option value="siswa">Siswa yang dipilih</option><option value="kelas">Seluruh kelas/halaqah ini</option><option value="custom">Pilih siswa sendiri (custom)</option></select></div><button class="btn" id="kp" style="align-self:flex-end">Buat PDF</button><button class="btn ghost" id="kw">Ekspor Word</button></div><div id="kcl" class="hidden" style="max-height:220px;overflow:auto;margin-top:10px"></div><p class="muted" style="font-size:13px;margin:8px 0 0">Jendela cetak akan terbuka. Pilih "Simpan sebagai PDF" sebagai printer. Pada mode kelas dan custom, siswa yang belum punya foto dilewati.</p></div><div id="kg"></div>`;
   let L = [];
   const gal = async () => {
     const id = $('#kb').value, g = $('#kg');
