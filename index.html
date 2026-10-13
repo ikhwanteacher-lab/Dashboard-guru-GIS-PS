@@ -470,7 +470,7 @@ async function enter() {
 /* ============ Navigasi ============ */
 const NAV = [['beranda', 'Beranda', 'home'], ['jurnal', 'Jurnal Mengajar', 'book'], ['hadir', 'Daftar Hadir', 'check'], ['nilai', 'Kalkulator Nilai', 'calc'], ['picker', 'Pemilih Nama Acak', 'shuffle'], ['tim', 'Pembagi Kelompok', 'users'], ['siswa', 'Kelas/Halaqah & Siswa', 'user'], ['rpp', 'Generator RPP', 'book'], ['soal', 'Bank Soal', 'book'], ['karya', 'Portofolio Siswa', 'user'], ['kartu', 'Kartu Laporan', 'check'], ['pengaturan', 'Pengaturan', 'gear']];
 function buildNav() {
-  const items = NAV.concat(S.user && S.user.admin ? [['admin', 'Panel Admin', 'shield'], ['induk', 'Data Induk Siswa', 'user']] : [], S.user && S.user.wali && S.user.wali.length ? [['wali', 'Jurnal Kelas Wali', 'users'], ['karyaWali', 'Portofolio Kelas Wali', 'user']] : []);
+  const items = NAV.concat(S.user && S.user.admin ? [['admin', 'Panel Admin', 'shield'], ['induk', 'Data Induk Siswa', 'user']] : [], S.user && S.user.wali && S.user.wali.length ? [['wali', 'Jurnal Kelas Wali', 'users'], ['karyaWali', 'Portofolio Kelas Wali', 'user']] : []).concat(S.user && S.user.koor ? [['tahfidz', 'Rapor Tahfidz', 'book']] : []);
   $('#nav').innerHTML = items.map(n => `<button class="nav" data-p="${n[0]}">${ico(n[2])}<span>${n[1]}</span></button>`).join('');
 }
 $('#logout').innerHTML = ico('out') + '<span>Keluar</span>';
@@ -967,7 +967,7 @@ async function pPicker() {
 }
 
 /* ============ Pembagi Kelompok ============ */
-const TK = { src: 'kelas', kelas: '', gender: '', mode: 'jumlah', n: 4, balance: true, pisah: true, hasil: null };
+const TK = { src: 'kelas', kelas: '', gender: '', mode: 'jumlah', n: 4, balance: false, pisah: true, hasil: null };
 async function pTim() {
   const ks = kelasAll(), cust = TK.src === 'custom';
   if (!ks.includes(TK.kelas)) TK.kelas = ks[0] || '';
@@ -984,7 +984,7 @@ async function pTim() {
     <div class="row"><label class="row" style="gap:6px"><input type="checkbox" id="tb" ${TK.balance ? 'checked' : ''}> Seimbangkan komposisi gender tiap kelompok</label><label class="row" style="gap:6px"><input type="checkbox" id="tp" ${TK.pisah ? 'checked' : ''}> Pisahkan kelompok sesuai gender</label><span class="grow"></span><span class="muted" id="ti"></span><button class="btn" id="tgo">${ico('shuffle')} Acak kelompok</button></div></div>
     <div id="tr"></div>`;
   const pool = () => (cust ? cusPool() : S.siswa.filter(s => s.kelas === TK.kelas)).filter(s => !TK.gender || s.gender === TK.gender);
-  const label = () => { $('#tl').textContent = TK.mode === 'jumlah' ? 'Jumlah kelompok' : 'Anggota per kelompok'; $('#ti').textContent = `${pool().length} siswa terpilih`; $('#tb').disabled = !!TK.gender || !!TK.pisah; $('#tp').disabled = !!TK.gender || !!TK.balance; };
+  const label = () => { if (TK.pisah && TK.balance) { TK.balance = false; $('#tb').checked = false; } $('#tl').textContent = TK.mode === 'jumlah' ? 'Jumlah kelompok' : 'Anggota per kelompok'; $('#ti').textContent = `${pool().length} siswa terpilih`; $('#tb').disabled = !!TK.gender || !!TK.pisah; $('#tp').disabled = !!TK.gender || !!TK.balance; };
   const tampil = () => {
     const h = TK.hasil;
     if (!h) { $('#tr').innerHTML = ''; return; }
@@ -1335,7 +1335,7 @@ async function adminSiswa() {
 const jrTabel = (a, g) => a.length ? `<div class="card"><div class="tw"><table><thead><tr><th>Tanggal</th>${g ? '<th>Guru</th>' : ''}<th>Kelas</th><th>Mapel</th><th>Materi</th><th>Hadir</th></tr></thead><tbody>${a.map(j => `<tr><td>${fmtTgl(j.tanggal)}</td>${g ? `<td>${esc(j.guru)}</td>` : ''}<td>${esc(j.kelas)}</td><td>${esc(j.mapel || '')}</td><td>${esc(j.materi)}${j.kendala ? `<div class="muted" style="font-size:12px">Kendala: ${esc(j.kendala)}</div>` : ''}</td><td>${j.hadir !== '' && j.hadir != null ? esc(j.hadir) + (j.total ? '/' + j.total : '') : '—'}</td></tr>`).join('')}</tbody></table></div></div>` : '<div class="card empty">Belum ada jurnal.</div>';
 async function pAdminFB() {
   const v = $('#view'), [L, U] = await Promise.all([call('adminGuru'), call('undanganList')]);
-  v.innerHTML = `<div class="ph"><h2>Panel Admin</h2><button class="btn" id="ex">Ekspor semua jurnal (CSV)</button></div><div class="card"><p class="muted" style="margin-top:0">Guru baru muncul di sini setelah masuk pertama kali dan baru bisa memakai aplikasi setelah disetujui. Data guru hanya bisa dilihat, tidak bisa diubah.</p><div class="tw"><table><thead><tr><th>Guru</th><th>Status</th><th>Wali kelas</th><th class="num">Jurnal</th><th>Terakhir</th><th></th></tr></thead><tbody>${L.map(g => `<tr><td>${esc(g.nama)}<div class="muted" style="font-size:12px">${esc(g.email)}</div></td><td><span class="badge ${g.aktif ? '' : 'P'}">${g.aktif ? 'Aktif' : 'Menunggu'}</span></td><td>${esc((g.wali || []).join(', ')) || '—'}</td><td class="num">${g.jurnal}</td><td>${g.terakhir ? fmtTgl(g.terakhir) : '—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-v="${g.uid}">Lihat</button> <button class="btn ghost sm" data-n="${g.uid}">Ubah nama</button> <button class="btn ghost sm" data-w="${g.uid}">Wali kelas</button> <button class="btn ghost sm" data-a="${g.uid}" data-s="${g.aktif ? 0 : 1}">${g.aktif ? 'Nonaktifkan' : 'Setujui'}</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada guru.</td></tr>'}</tbody></table></div></div>
+  v.innerHTML = `<div class="ph"><h2>Panel Admin</h2><button class="btn" id="ex">Ekspor semua jurnal (CSV)</button></div><div class="card"><p class="muted" style="margin-top:0">Guru baru muncul di sini setelah masuk pertama kali dan baru bisa memakai aplikasi setelah disetujui. Data guru hanya bisa dilihat, tidak bisa diubah.</p><div class="tw"><table><thead><tr><th>Guru</th><th>Status</th><th>Wali kelas / Peran</th><th class="num">Jurnal</th><th>Terakhir</th><th></th></tr></thead><tbody>${L.map(g => `<tr><td>${esc(g.nama)}<div class="muted" style="font-size:12px">${esc(g.email)}</div></td><td><span class="badge ${g.aktif ? '' : 'P'}">${g.aktif ? 'Aktif' : 'Menunggu'}</span></td><td>${esc((g.wali || []).join(', ')) || '—'}${g.koor ? ' <span class="badge">Koordinator Diniyyah</span>' : ''}</td><td class="num">${g.jurnal}</td><td>${g.terakhir ? fmtTgl(g.terakhir) : '—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-v="${g.uid}">Lihat</button> <button class="btn ghost sm" data-n="${g.uid}">Ubah nama</button> <button class="btn ghost sm" data-w="${g.uid}">Wali kelas</button> <button class="btn ghost sm" data-k="${g.uid}" data-s="${g.koor ? 0 : 1}">${g.koor ? 'Cabut Koordinator Diniyyah' : 'Koordinator Diniyyah'}</button> <button class="btn ghost sm" data-a="${g.uid}" data-s="${g.aktif ? 0 : 1}">${g.aktif ? 'Nonaktifkan' : 'Setujui'}</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada guru.</td></tr>'}</tbody></table></div></div>
   <div class="card" style="margin-top:16px"><h3 style="margin:0 0 6px">Email yang boleh mendaftar</h3><p class="muted" style="margin-top:0;font-size:13px">Hanya email di daftar ini yang bisa membuat akun guru. Satu baris satu email, nama boleh ditambahkan setelah titik koma, mis. guru.mtk@gistrav.com; Budi Santoso</p><textarea id="ut" rows="4" style="width:100%;font-family:inherit" placeholder="guru.mtk@gistrav.com; Budi Santoso"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="utb">Tambahkan</button></div><div class="tw" style="margin-top:12px"><table><thead><tr><th>Email</th><th>Nama</th><th>Status</th><th></th></tr></thead><tbody>${U.map(u => { const d = L.some(g => String(g.email || '').toLowerCase() === u.email); return `<tr><td>${esc(u.email)}</td><td>${esc(u.nama || '')}</td><td><span class="badge ${d ? '' : 'P'}">${d ? 'Sudah mendaftar' : 'Belum mendaftar'}</span></td><td style="text-align:right"><button class="btn ghost sm" data-ud="${esc(u.email)}">Hapus</button></td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">Daftar masih kosong, jadi belum ada yang bisa mendaftar.</td></tr>'}</tbody></table></div></div>`;
   v.onclick = async e => {
     if (e.target.closest('#ex')) { try { const r = await call('adminJurnalSemua'); fxUnduh('jurnal-semua-guru.csv', fxCsv(r, fxJcols), 'text/csv;charset=utf-8'); } catch (er) { toast(er.message, 'err'); } return; }
@@ -1349,10 +1349,11 @@ async function pAdminFB() {
     }
     const ud = e.target.closest('[data-ud]');
     if (ud) { if (await confirmBox('Hapus ' + ud.dataset.ud + ' dari daftar? Akun yang sudah dibuat tidak ikut terhapus.')) { try { await call('undanganHapus', { email: ud.dataset.ud }); pAdminFB(); } catch (er) { toast(er.message, 'err'); } } return; }
-    const b = e.target.closest('[data-v],[data-w],[data-a],[data-n]'); if (!b) return;
-    const g = L.find(x => x.uid === (b.dataset.v || b.dataset.w || b.dataset.a || b.dataset.n));
+    const b = e.target.closest('[data-v],[data-w],[data-a],[data-n],[data-k]'); if (!b) return;
+    const g = L.find(x => x.uid === (b.dataset.v || b.dataset.w || b.dataset.a || b.dataset.n || b.dataset.k));
     try {
       if (b.dataset.a) { await call('adminSetAktif', { uid: g.uid, aktif: b.dataset.s === '1' }); pAdminFB(); }
+      else if (b.dataset.k) { await call('adminSetKoor', { uid: g.uid, aktif: b.dataset.s === '1' }); toast(b.dataset.s === '1' ? 'Koordinator Diniyyah ditetapkan.' : 'Peran Koordinator Diniyyah dicabut.'); pAdminFB(); }
       else if (b.dataset.n) modal('Ubah nama guru', `<div class="fld"><label class="f">Nama yang tampil</label><input name="nama" required value="${esc(g.nama)}"></div>`, async d => { await call('adminSetNama', { uid: g.uid, nama: d.nama }); toast('Nama disimpan.'); pAdminFB(); });
       else if (b.dataset.w) modal('Wali kelas: ' + esc(g.nama), `<div class="fld"><label class="f">Kelas yang diwalikan, pisahkan dengan koma (mis. 5A, 5B). Tulis sama dengan "Kelas siswa". Kosongkan untuk mencabut.</label><input name="kelas" value="${esc((g.wali || []).join(', '))}"></div>`, async d => { await call('adminSetWali', { uid: g.uid, kelas: d.kelas.split(',').map(x => x.trim()).filter(Boolean) }); toast('Wali kelas disimpan.'); pAdminFB(); });
       else {
@@ -1558,13 +1559,13 @@ const fxKecil = f => new Promise((ok, no) => { const im = new Image(), u = URL.c
 let PKW = false;
 async function pKaryaWali() { PKW = true; try { await pKarya(); } finally { PKW = false; } }
 async function pKarya() {
-  await muatSiswa(); const v = $('#view'), H = PKW ? (S.user.wali || []).map(x => ({ id: 'k:' + x, nama: 'Kelas ' + x })) : S.halaqah, inK = (s, id) => id.startsWith('k:') ? s.kelasAsli === id.slice(2) : s.halaqahId === id;
+  await muatSiswa(); const v = $('#view'), wm = PKW, H = PKW ? (S.user.wali || []).map(x => ({ id: 'k:' + x, nama: 'Kelas ' + x })) : S.halaqah, inK = (s, id) => id.startsWith('k:') ? s.kelas === id.slice(2) : s.halaqahId === id;
   v.innerHTML = `<div class="ph"><h2>${PKW ? 'Portofolio Kelas Wali' : 'Portofolio Siswa'}</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto</label><div class="row"><button type="button" class="btn ghost" id="kam">Ambil foto (kamera)</button><label class="btn ghost" for="kf" style="cursor:pointer">Pilih dari galeri</label></div><input id="kf" type="file" accept="image/*" multiple hidden><input id="kf1" type="file" accept="image/*" capture="environment" hidden><div class="muted" id="kn" style="font-size:13px;margin-top:6px"></div></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Ekspor portofolio ke PDF</label><select id="kx"><option value="siswa">Siswa yang dipilih</option><option value="kelas">Seluruh kelas/halaqah ini</option><option value="custom">Pilih siswa sendiri (custom)</option></select></div><button class="btn" id="kp" style="align-self:flex-end">Buat PDF</button><button class="btn ghost" id="kw">Ekspor Word</button></div><div id="kcl" class="hidden" style="max-height:220px;overflow:auto;margin-top:10px"></div><p class="muted" style="font-size:13px;margin:8px 0 0">Jendela cetak akan terbuka. Pilih "Simpan sebagai PDF" sebagai printer. Pada mode kelas dan custom, siswa yang belum punya foto dilewati.</p></div><div id="kg"></div>`;
   let L = [];
   const gal = async () => {
     const id = $('#kb').value, g = $('#kg');
     if (!id) { g.innerHTML = '<div class="card empty">Belum ada siswa di kelompok ini.</div>'; return; }
-    L = await call('karyaList', { siswaId: id });
+    L = await call('karyaList', { siswaId: id, wali: wm, kelas: (S.siswa.find(x => x.id === id) || {}).kelas || '' });
     g.innerHTML = L.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">${L.map(k => `<div class="card" style="padding:8px"><img src="${k.foto}" data-z="${k.id}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;cursor:pointer"><div style="font-size:13px;margin-top:6px"><b>${esc(k.label || 'Tanpa label')}</b><br><span class="muted">${fmtTgl(k.tanggal)}</span></div><div class="muted" style="font-size:12px">${esc(k.pemilik || '')}</div>${k.mine ? `<div class="row" style="gap:6px;margin-top:6px"><button class="btn ghost sm" data-l="${k.id}">Label</button><button class="btn ghost sm" data-x="${k.id}">Hapus</button></div>` : ''}</div>`).join('')}</div>` : '<div class="card empty">Belum ada karya untuk siswa ini.</div>';
   };
   const isi = () => { $('#kb').innerHTML = S.siswa.filter(s => inK(s, $('#ka').value)).sort((a, b) => a.nama.localeCompare(b.nama, 'id')).map(s => `<option value="${s.id}">${esc(s.nama)}</option>`).join(''); gal(); };
@@ -1580,7 +1581,7 @@ async function pKarya() {
     if (w) w.document.write('<p style="font-family:sans-serif">Menyiapkan portofolio…</p>');
     try {
       const mur = ids.map(id => S.siswa.find(s => s.id === id)).filter(Boolean).sort((a, b) => a.nama.localeCompare(b.nama, 'id')), data = [];
-      for (const s of mur) data.push({ s, k: await call('karyaList', { siswaId: s.id }) });
+      for (const s of mur) data.push({ s, k: await call('karyaList', { siswaId: s.id, wali: wm, kelas: s.kelas || '' }) });
       const pakai = mode === 'siswa' ? data : data.filter(d => d.k.length);
       if (!pakai.length) { if (w) w.close(); return toast('Tidak ada foto karya pada siswa yang dipilih.', 'err'); }
       const css = '@page{size:A4;margin:0}body{font-family:Arial,sans-serif;margin:0;padding:14mm}.s{page-break-after:always}.s:last-child{page-break-after:auto}h1{font-size:17pt;margin:0 0 1mm}.m{color:#555;font-size:10pt;margin-bottom:5mm}.g{display:grid;grid-template-columns:1fr 1fr;gap:4mm}.k{break-inside:avoid;border:1px solid #ccc;border-radius:2mm;padding:2mm}.k img{width:100%;max-height:85mm;object-fit:contain}.k div{font-size:9pt;margin-top:1mm}';
@@ -1615,7 +1616,7 @@ async function pKarya() {
   $('#ku').onclick = async () => {
     const id = $('#kb').value, fs = pending.slice();
     if (!id || !fs.length) return toast('Pilih siswa dan foto dulu.', 'err');
-    try { for (const f of fs) await call('karyaSave', { siswaId: id, label: $('#kl').value.trim(), tanggal: fxHariIni(), foto: await fxKecil(f) }); pending = []; info(); toast(fs.length + ' foto disimpan.'); gal(); } catch (er) { toast(er.message, 'err'); }
+    try { for (const f of fs) await call('karyaSave', { siswaId: id, kelas: (S.siswa.find(x => x.id === id) || {}).kelas || '', label: $('#kl').value.trim(), tanggal: fxHariIni(), foto: await fxKecil(f) }); pending = []; info(); toast(fs.length + ' foto disimpan.'); gal(); } catch (er) { toast(er.message, 'err'); }
   };
   isi();
 }
@@ -1699,6 +1700,7 @@ const daftar = cfg => { const L = SURAH.map((n, i) => ({ key: String(NOSURAH[i])
 const slotRapor = (r, cfg) => { const D = daftar(cfg), N = Math.min(D.length, Math.max(1, +cfg.jumlah || 32)), half = Math.max(18, Math.ceil(N / 2)); const c = k => [String(k + 1), k < N ? D[k].nama : '', k < N ? (r.skor[D[k].key] || SKOR[0]) : '']; return Array.from({ length: half }, (_, i) => [...c(i), ...c(i + half)]); };
 const KRITERIA = '80-95 = Good | 70-79 = Fluent | 60-69 = Fluent Enough | 40-59 = Not Fluent';
 function buatDocx(list, cfg) {
+  const F4 = (cfg.kertas || 'F4') === 'F4', PW = F4 ? 12189 : 11909, PH = F4 ? 18709 : 16834, pwCm = F4 ? 21.5 : 21;
   const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
   const HD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', RT = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/';
   const X = t => String(t ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -1727,7 +1729,7 @@ function buatDocx(list, cfg) {
   });
   const hKop = cfg.kop ? Math.round(16 * cfg.kop.h / cfg.kop.w * 567) : 0, hFoot = cfg.foot ? Math.round(16 * cfg.foot.h / cfg.foot.w * 567) : 0;
   const hdr = cfg.kop || cfg.latar;
-  const sect = `<w:sectPr>${hdr ? '<w:headerReference w:type="default" r:id="rIdH"/>' : ''}${cfg.foot ? '<w:footerReference w:type="default" r:id="rIdF"/>' : ''}<w:pgSz w:w="11909" w:h="16834"/><w:pgMar w:top="${cfg.kop ? 566 + hKop + 200 : 1134}" w:right="1440" w:bottom="1134" w:left="1417" w:header="566" w:footer="566"/></w:sectPr>`;
+  const sect = `<w:sectPr>${hdr ? '<w:headerReference w:type="default" r:id="rIdH"/>' : ''}${cfg.foot ? '<w:footerReference w:type="default" r:id="rIdF"/>' : ''}<w:pgSz w:w="${PW}" w:h="${PH}"/><w:pgMar w:top="${cfg.kop ? 566 + hKop + 200 : 1134}" w:right="1440" w:bottom="1134" w:left="1417" w:header="566" w:footer="566"/></w:sectPr>`;
   const rel = (id, t, tg) => `<Relationship Id="${id}" Type="${RT}${t}" Target="${tg}"/>`, rels = x => `${HD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${x}</Relationships>`;
   const F = [
     { n: '[Content_Types].xml', d: `${HD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>` },
@@ -1737,44 +1739,49 @@ function buatDocx(list, cfg) {
   ];
   if (hdr) F.push({ n: 'word/header1.xml', d: `${HD}<w:hdr ${NS}>${P((cfg.kop ? gambar('rIdK', cfg.kop, 16, 1) : '') + (cfg.latar ? gambar('rIdB', cfg.latar, 12, 3, 1) : ''), 1, 0)}</w:hdr>` }, { n: 'word/_rels/header1.xml.rels', d: rels((cfg.kop ? rel('rIdK', 'image', 'media/kop.jpeg') : '') + (cfg.latar ? rel('rIdB', 'image', 'media/latar.jpeg') : '')) });
   if (cfg.kop) F.push({ n: 'word/media/kop.jpeg', d: bin(cfg.kop.d) }); if (cfg.latar) F.push({ n: 'word/media/latar.jpeg', d: bin(cfg.latar.d) });
-  if (cfg.foot) F.push({ n: 'word/footer1.xml', d: `${HD}<w:ftr ${NS}>${P(gambar('rIdK', cfg.foot, 21, 2, 'b'), 1, 0)}</w:ftr>` }, { n: 'word/_rels/footer1.xml.rels', d: rels(rel('rIdK', 'image', 'media/foot.jpeg')) }, { n: 'word/media/foot.jpeg', d: bin(cfg.foot.d) });
+  if (cfg.foot) F.push({ n: 'word/footer1.xml', d: `${HD}<w:ftr ${NS}>${P(gambar('rIdK', cfg.foot, pwCm, 2, 'b'), 1, 0)}</w:ftr>` }, { n: 'word/_rels/footer1.xml.rels', d: rels(rel('rIdK', 'image', 'media/foot.jpeg')) }, { n: 'word/media/foot.jpeg', d: bin(cfg.foot.d) });
   if (cfg.ttd) F.push({ n: 'word/media/ttd.jpeg', d: bin(cfg.ttd.d) }); if (cfg.ttd2) F.push({ n: 'word/media/ttd2.jpeg', d: bin(cfg.ttd2.d) });
   return zipDocx(F);
 }
 function htmlRapor(list, cfg) {
+  const f4 = (cfg.kertas || 'F4') === 'F4';
   const im = (g, w) => g ? `<img src="${g.d}" style="width:${w}">` : '';
   const sec = r => `<section class="s" style="${[cfg.foot ? `url(${cfg.foot.d}) bottom/100% auto no-repeat` : '', cfg.latar ? `url(${cfg.latar.d}) center 55%/55% no-repeat` : ''].filter(Boolean).length ? 'background:' + [cfg.foot ? `url(${cfg.foot.d}) bottom/100% auto no-repeat` : '', cfg.latar ? `url(${cfg.latar.d}) center 55%/55% no-repeat` : ''].filter(Boolean).join(',') : ''}">${im(cfg.kop, '100%')}<h3>TAHFIZH REPORT</h3><h4>SCHOOL YEAR ${esc(cfg.tahun || '2026/2027')} (${esc(cfg.semester || 'FIRST SEMESTER')})</h4><div class="l"><b>Name of Student : ${esc(r.nama)}<br>Grade : ${esc(r.kelas)}</b></div><table class="t"><tr><th>No</th><th>Surah</th><th>Score</th><th class="g"></th><th>No</th><th>Surah</th><th>Score</th></tr>${slotRapor(r, cfg).map(c => `<tr><td>${c[0]}</td><td class="n">${esc(c[1])}</td><td>${esc(c[2])}</td><td class="g"></td><td>${c[3]}</td><td class="n">${esc(c[4])}</td><td>${esc(c[5])}</td></tr>`).join('')}</table><div class="b"><b>Notes:</b> ${esc(r.catatan || '')}</div><p class="l"><b>Score Criteria:</b> ${KRITERIA}</p><table class="g2"><tr><td>Undersigned<br>${im(cfg.ttd, '30mm')}<br><b><u>${esc(cfg.koor || '')}</u></b><br><b>Diniyah Coordinator</b></td><td>${esc(cfg.tempat || 'Sleman')}, ${tglEn()}<br>${im(cfg.ttd2, '30mm')}<br><b><u>${esc(cfg.guru || '')}</u></b><br><b>Tahfizh Teacher</b></td></tr></table></section>`;
-  return `<html><head><meta charset="utf-8"><title>Rapor Tahfidz</title><style>@page{size:A4;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Calibri,'DejaVu Sans',Arial,sans-serif;font-size:10pt}.s{page-break-after:always;text-align:center;min-height:276mm}.s:last-child{page-break-after:auto}h3,h4{margin:4px 0}.l{text-align:left}.t{width:100%;border-collapse:collapse}.t td,.t th{border:1px solid #000;padding:1px 4px;height:5.5mm;text-align:center}.t td.n{text-align:left}.t .g{border:0;width:3mm}.b{border:1px solid #000;padding:4px;text-align:left;margin-top:6px}.g2{width:100%;text-align:center;margin-top:8px}.g2 td{width:50%}</style></head><body>${list.map(sec).join('')}</body></html>`;
+  return `<html><head><meta charset="utf-8"><title>Rapor Tahfidz</title><style>@page{size:${f4 ? '215mm 330mm' : 'A4'};margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Calibri,'DejaVu Sans',Arial,sans-serif;font-size:10pt}.s{page-break-after:always;text-align:center;min-height:${f4 ? 307 : 276}mm}.s:last-child{page-break-after:auto}h3,h4{margin:4px 0}.l{text-align:left}.t{width:100%;border-collapse:collapse}.t td,.t th{border:1px solid #000;padding:1px 4px;height:5.5mm;text-align:center}.t td.n{text-align:left}.t .g{border:0;width:3mm}.b{border:1px solid #000;padding:4px;text-align:left;margin-top:6px}.g2{width:100%;text-align:center;margin-top:8px}.g2 td{width:50%}</style></head><body>${list.map(sec).join('')}</body></html>`;
 }
 async function pTahfidz() {
-  await muatSiswa(); const v = $('#view'), H = S.halaqah, TF = await call('tahfidzAll'), rec = TF.rec || {}; let cfg = TF.cfg || {}, cur = null;
-  v.innerHTML = `${tabsNilai('tahfidz')}<div class="ph"><div><h2>Rapor Tahfidz</h2><div class="muted">49 surah, urutan sesuai format rapor</div></div><div class="row"><button class="btn ghost" id="tx">Tambah surah</button><button class="btn ghost" id="td">Daftar Surah</button><button class="btn ghost" id="tc">Pengaturan dokumen</button></div></div>
+  await muatSiswa(); const v = $('#view'), semua = !!(S.user.admin || S.user.koor), kls = semua ? [...new Set(S.siswa.map(x => x.kelas).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id', { numeric: true })) : (S.user.wali || []), H = S.halaqah.concat(kls.map(x => ({ id: 'k:' + x, nama: 'Kelas ' + x + (semua ? '' : ' (wali)') }))), inK = (x, id) => id.startsWith('k:') ? x.kelas === id.slice(2) : x.halaqahId === id, TF = await call('tahfidzAll', { semua, wali: S.user.wali || [] }), rec = TF.rec || {}; let cfg = TF.cfg || {}, cur = null;
+  v.innerHTML = `${tabsNilai('tahfidz')}<div class="ph"><div><h2>Rapor Tahfidz</h2><div class="muted">49 surah, urutan sesuai format rapor</div></div><div class="row">${semua ? '<button class="btn ghost" id="tx">Tambah surah</button>' : ''}<button class="btn ghost" id="td">Daftar Surah</button>${semua ? '<button class="btn ghost" id="tc">Pengaturan dokumen</button>' : ''}</div></div>
     <div class="card" style="margin-bottom:14px"><div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ta">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="tb"></select></div></div>
-      <div class="row" style="flex-wrap:wrap;margin-top:8px"><select id="tm">${SKOR.map(x => `<option>${x}</option>`).join('')}</select><button class="btn ghost" id="ti">Isi semua surah</button><div class="grow"></div><button class="btn" id="ts">Simpan</button><button class="btn ghost" id="tw">Unduh siswa (Word)</button><button class="btn ghost" id="tk">Unduh kelas (Word)</button><button class="btn ghost" id="tp">Cetak PDF siswa</button></div></div><div id="tt"></div>`;
-  const sis = () => S.siswa.filter(s => s.halaqahId === $('#ta').value).sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
-  const lap = s => ({ nama: s.nama, kelas: s.kelasAsli || (H.find(h => h.id === s.halaqahId) || {}).nama || '', skor: (rec[s.id] || {}).skor || {}, catatan: (rec[s.id] || {}).catatan || '' });
+      <div class="row" style="flex-wrap:wrap;margin-top:10px;align-items:flex-end"><div class="fld grow"><label class="f">Isi massal dari</label><select id="ma"></select></div><div class="fld grow"><label class="f">sampai</label><select id="mb"></select></div><div class="fld"><label class="f">Skor</label><select id="tm">${SKOR.map(x => `<option ${x === 'Good' ? 'selected' : ''}>${x}</option>`).join('')}</select></div><button class="btn ghost" id="ti">Terapkan</button></div><div class="row" style="flex-wrap:wrap;margin-top:8px"><div class="grow"></div><button class="btn" id="ts">Simpan</button><button class="btn ghost" id="tw">Unduh siswa (Word)</button><button class="btn ghost" id="tk">Unduh kelas (Word)</button><button class="btn ghost" id="tp">Cetak PDF siswa</button></div></div><div id="tt"></div>`;
+  const sis = () => S.siswa.filter(s => inK(s, $('#ta').value)).sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
+  const lap = s => ({ nama: s.nama, kelas: s.kelas || s.kelasAsli || (H.find(h => h.id === s.halaqahId) || {}).nama || '', skor: (rec[s.id] || {}).skor || {}, catatan: (rec[s.id] || {}).catatan || '' });
+  const massal = () => { const D = daftar(cfg), a = +($('#ma').value || 0), b = $('#mb').value === '' ? D.length - 1 : +$('#mb').value, o = D.map((d, j) => `<option value="${j}">${j + 1}. ${esc(d.nama)}</option>`).join(''); $('#ma').innerHTML = o; $('#mb').innerHTML = o; $('#ma').value = Math.min(a, D.length - 1); $('#mb').value = Math.min(b, D.length - 1); };
+  const kunci = () => { const ok = semua || !rec[cur.id] || rec[cur.id].mine !== false; $$('#tt select,#tt textarea').forEach(e => { e.disabled = !ok; }); $('#ts').disabled = !ok; $('#ti').disabled = !ok; if (!ok) $('#tt').insertAdjacentHTML('afterbegin', '<div class="muted" style="margin-bottom:8px">Rapor ini diisi guru lain. Anda bisa melihat dan mengunduhnya, tetapi tidak bisa mengubahnya.</div>'); };
   const draw = () => {
+    massal();
     cur = S.siswa.find(s => s.id === $('#tb').value); const t = $('#tt');
     if (!cur) { t.innerHTML = '<div class="card empty">Belum ada siswa di kelompok ini.</div>'; return; }
     const r = lap(cur);
     t.innerHTML = `<div class="card"><div class="tw"><table><thead><tr><th>No</th><th>Surah</th><th>Skor</th></tr></thead><tbody>${daftar(cfg).map((d, j) => `<tr><td>${j + 1}</td><td>${esc(d.nama)}</td><td><select data-n="${d.key}">${SKOR.map(x => `<option ${(r.skor[d.key] || SKOR[0]) === x ? 'selected' : ''}>${x}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div><div class="fld" style="margin-top:12px"><label class="f">Catatan</label><textarea id="tn" rows="3">${esc(r.catatan)}</textarea></div></div>`;
+    kunci();
   };
-  const sinkron = () => { if (!cur) return; const sk = {}; $$('#tt [data-n]').forEach(e => { sk[e.dataset.n] = e.value; }); rec[cur.id] = { skor: sk, catatan: $('#tn').value }; };
+  const sinkron = () => { if (!cur) return; const sk = {}; $$('#tt [data-n]').forEach(e => { sk[e.dataset.n] = e.value; }); rec[cur.id] = { ...(rec[cur.id] || {}), skor: sk, catatan: $('#tn').value }; };
   const isi = () => { $('#tb').innerHTML = sis().map(s => `<option value="${s.id}">${esc(s.nama)}</option>`).join(''); draw(); };
   $('#ta').onchange = isi; $('#tb').onchange = draw; isi();
   $('#tt').oninput = $('#tt').onchange = sinkron;
-  $('#ti').onclick = () => { $$('#tt [data-n]').forEach(e => { e.value = $('#tm').value; }); sinkron(); };
-  $('#ts').onclick = async () => { if (!cur) return; sinkron(); try { await call('tahfidzSave', { siswaId: cur.id, skor: rec[cur.id].skor, catatan: rec[cur.id].catatan }); toast('Rapor tersimpan.'); } catch (er) { toast(er.message, 'err'); } };
+  $('#ti').onclick = () => { if (!cur) return; const a = +$('#ma').value, b = +$('#mb').value, lo = Math.min(a, b), hi = Math.max(a, b); $$('#tt [data-n]').forEach((e, k) => { if (k >= lo && k <= hi) e.value = $('#tm').value; }); sinkron(); toast(`Surah ${lo + 1} sampai ${hi + 1} diisi ${$('#tm').value}. Tekan Simpan.`); };
+  $('#ts').onclick = async () => { if (!cur) return; sinkron(); try { await call('tahfidzSave', { siswaId: cur.id, kelas: cur.kelas || '', ownerUid: rec[cur.id].ownerUid || '', skor: rec[cur.id].skor, catatan: rec[cur.id].catatan }); rec[cur.id].mine = true; toast('Rapor tersimpan.'); } catch (er) { toast(er.message, 'err'); } };
   const unduh = list => fxUnduhBlob('rapor-tahfidz.docx', buatDocx(list, cfg));
   $('#tw').onclick = () => { if (!cur) return; sinkron(); unduh([lap(cur)]); };
   $('#tk').onclick = () => { sinkron(); const l = sis(); if (!l.length) return toast('Belum ada siswa.', 'err'); unduh(l.map(lap)); };
   $('#tp').onclick = () => { if (!cur) return; sinkron(); const w = window.open('', '_blank'); if (!w) return toast('Izinkan pop-up untuk mencetak.', 'err'); w.document.write(htmlRapor([lap(cur)], cfg)); w.document.close(); w.focus(); setTimeout(() => w.print(), 500); };
   const daftarModal = () => {
-    modal('Daftar Surah', `<div style="columns:2;font-size:14px">${daftar(cfg).map((d, j) => `<div>${j + 1}. ${esc(d.nama)}${d.key[0] === 'x' ? ` <button type="button" class="btn ghost sm" data-hx="${d.key}">Hapus</button>` : ''}</div>`).join('')}</div><p class="muted" style="font-size:13px">Surah tambahan bisa dihapus dari daftar ini.</p>`, async () => {}, 'Tutup');
+    modal('Daftar Surah', `<div style="columns:2;font-size:14px">${daftar(cfg).map((d, j) => `<div>${j + 1}. ${esc(d.nama)}${d.key[0] === 'x' && semua ? ` <button type="button" class="btn ghost sm" data-hx="${d.key}">Hapus</button>` : ''}</div>`).join('')}</div><p class="muted" style="font-size:13px">Surah tambahan bisa dihapus dari daftar ini.</p>`, async () => {}, 'Tutup');
     $('#sheet').onclick = async ev => { const k = ev.target.dataset && ev.target.dataset.hx; if (!k) return; sinkron(); cfg = { ...cfg, extra: (cfg.extra || []).filter(e => e.key !== k) }; try { await call('tahfidzCfg', cfg); draw(); daftarModal(); } catch (er) { toast(er.message, 'err'); } };
   };
   $('#td').onclick = daftarModal;
-  $('#tx').onclick = () => {
+  if ($('#tx')) $('#tx').onclick = () => {
     const N = Math.min(daftar(cfg).length, +cfg.jumlah || 32);
     modal('Tambah surah', `<div class="fld"><label class="f">Nama surah</label><input name="nama" placeholder="Mis. Al Baqarah"></div><div class="fld"><label class="f">Posisi nomor di rapor</label><input type="number" name="pos" min="1" value="${N + 1}"></div><div class="muted" style="font-size:13px">Surah yang ada di posisi itu dan sesudahnya bergeser ke bawah.</div>`, async d => {
       const nama = (d.nama || '').trim(); if (!nama) throw new Error('Nama surah wajib diisi.');
@@ -1782,10 +1789,10 @@ async function pTahfidz() {
       await call('tahfidzCfg', cfg); draw(); toast('Surah ditambahkan.');
     });
   };
-  $('#tc').onclick = () => modal('Pengaturan dokumen', `<div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Tahun ajaran</label><input name="tahun" value="${esc(cfg.tahun || '2026/2027')}"></div><div class="fld grow"><label class="f">Semester</label><select name="semester">${['FIRST SEMESTER', 'SECOND SEMESTER'].map(x => `<option ${(cfg.semester || 'FIRST SEMESTER') === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Jumlah surah di rapor (1-${daftar(cfg).length})</label><input type="number" name="jumlah" min="1" max="${daftar(cfg).length}" value="${+cfg.jumlah || 32}"></div></div>
+  if ($('#tc')) $('#tc').onclick = () => modal('Pengaturan dokumen', `<div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Ukuran kertas</label><select name="kertas">${['F4', 'A4'].map(x => `<option ${(cfg.kertas || 'F4') === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Tahun ajaran</label><input name="tahun" value="${esc(cfg.tahun || '2026/2027')}"></div><div class="fld grow"><label class="f">Semester</label><select name="semester">${['FIRST SEMESTER', 'SECOND SEMESTER'].map(x => `<option ${(cfg.semester || 'FIRST SEMESTER') === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Jumlah surah di rapor (1-${daftar(cfg).length})</label><input type="number" name="jumlah" min="1" max="${daftar(cfg).length}" value="${+cfg.jumlah || 32}"></div></div>
     <div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Tempat</label><input name="tempat" value="${esc(cfg.tempat || 'Sleman')}"></div><div class="fld grow"><label class="f">Koordinator Diniyah</label><input name="koor" value="${esc(cfg.koor || '')}"></div><div class="fld grow"><label class="f">Guru Tahfizh</label><input name="guru" value="${esc(cfg.guru || '')}"></div></div>
     ${[['kop', 'Kop (header)'], ['latar', 'Latar / watermark (opsional)'], ['foot', 'Footer (opsional)'], ['ttd', 'Tanda tangan koordinator (opsional)'], ['ttd2', 'Tanda tangan guru (opsional)']].map(([k, t]) => `<div class="fld"><label class="f">${t}${cfg[k] ? ' – sudah ada' : ''}</label><input type="file" name="${k}" accept="image/*">${cfg[k] ? `<label class="row" style="gap:6px;margin-top:4px"><input type="checkbox" name="hapus_${k}"> Hapus gambar ini</label>` : ''}</div>`).join('')}`, async d => {
-    const n = { ...cfg, tahun: (d.tahun || '').trim(), semester: d.semester, jumlah: Math.min(daftar(cfg).length, Math.max(1, +d.jumlah || 32)), tempat: (d.tempat || '').trim(), koor: (d.koor || '').trim(), guru: (d.guru || '').trim() };
+    const n = { ...cfg, tahun: (d.tahun || '').trim(), semester: d.semester, kertas: d.kertas, jumlah: Math.min(daftar(cfg).length, Math.max(1, +d.jumlah || 32)), tempat: (d.tempat || '').trim(), koor: (d.koor || '').trim(), guru: (d.guru || '').trim() };
     for (const [k, mx] of [['kop', 1400], ['latar', 900], ['foot', 1400], ['ttd', 400], ['ttd2', 400]]) { if (d['hapus_' + k]) delete n[k]; else if (d[k] && d[k].size) n[k] = await tImg(d[k], mx); }
     if (JSON.stringify(n).length > 900000) throw new Error('Gambar terlalu besar. Kecilkan ukuran gambar.');
     await call('tahfidzCfg', n); cfg = n; toast('Pengaturan disimpan.');
@@ -1931,7 +1938,7 @@ const cmp = (a, b) => String(a).localeCompare(String(b), 'id', { numeric: true }
 const hKey = (t, k) => t + '_' + encodeURIComponent(k);
 let ME = { nama: '' };
 const prof = async u => {
-  const [a, w, g] = await Promise.all([getDoc(doc(db, 'admins', u.uid)), getDoc(doc(db, 'wali', u.uid)), getDoc(doc(db, 'guru', u.uid))]);
+  const [a, w, g, kk] = await Promise.all([getDoc(doc(db, 'admins', u.uid)), getDoc(doc(db, 'wali', u.uid)), getDoc(doc(db, 'guru', u.uid)), getDoc(doc(db, 'koordinator', u.uid))]);
   const admin = a.exists(), nama = u.displayName || u.email.split('@')[0];
   if (!admin) {
     if (!/@gistrav\.com$/i.test(u.email)) { await signOut(auth); throw new Error('Hanya email @gistrav.com yang dapat dipakai.'); }
@@ -1940,7 +1947,7 @@ const prof = async u => {
   if (!(admin || (g.exists() && g.data().aktif === true))) { await signOut(auth); throw new Error('Akun Anda menunggu persetujuan admin.'); }
   try { localStorage.setItem('dg_last', String(Date.now())); } catch (e) {}
   ME.nama = (g.exists() && g.data().nama) || nama;
-  return { nama: ME.nama, admin, pwAwal: g.exists() && g.data().pwAwal === true, wali: w.exists() ? (w.data().kelas || []) : [] };
+  return { nama: ME.nama, admin, pwAwal: g.exists() && g.data().pwAwal === true, wali: w.exists() ? (w.data().kelas || []) : [], koor: kk.exists() };
 };
 const load = async () => { const [s, h] = await Promise.all([all('siswa'), all('halaqah')]); return { s, h, m: new Map(s.map(x => [x.id, x])) }; };
 const members = (g, m) => (g.anggota || []).map(i => m.get(i)).filter(Boolean);
@@ -2056,19 +2063,25 @@ const A = {
   },
   jurnalDelete: async p => { const lama = ((await getDoc(D('jurnal', p.id))).data() || {}).kelasSiswa || []; await sinkron(p.id, null, lama); await deleteDoc(D('jurnal', p.id)); },
   adminGuru: async () => {
-    const [gs, ws] = await Promise.all([getDocs(collection(db, 'guru')), getDocs(collection(db, 'wali'))]);
+    const [gs, ws, kd] = await Promise.all([getDocs(collection(db, 'guru')), getDocs(collection(db, 'wali')), getDocs(collection(db, 'koordinator'))]);
     const wali = Object.fromEntries(ws.docs.map(d => [d.id, d.data().kelas || []]));
-    return (await Promise.all(gs.docs.map(async d => { const j = await allOf(d.id, 'jurnal'); return { uid: d.id, ...d.data(), wali: wali[d.id] || [], jurnal: j.length, terakhir: j.map(x => x.tanggal).sort().pop() || '' }; }))).sort((a, b) => cmp(a.nama, b.nama));
+    const koorSet = new Set(kd.docs.map(d => d.id));
+    return (await Promise.all(gs.docs.map(async d => { const j = await allOf(d.id, 'jurnal'); return { uid: d.id, ...d.data(), wali: wali[d.id] || [], koor: koorSet.has(d.id), jurnal: j.length, terakhir: j.map(x => x.tanggal).sort().pop() || '' }; }))).sort((a, b) => cmp(a.nama, b.nama));
   },
   adminSetNama: async p => { const n = p.nama.trim(); if (!n) throw new Error('Nama tidak boleh kosong.'); await updateDoc(doc(db, 'guru', p.uid), { nama: n }); },
   adminJurnalSemua: async () => { const gs = await getDocs(collection(db, 'guru')); return (await Promise.all(gs.docs.map(async d => (await allOf(d.id, 'jurnal')).map(j => ({ ...j, guru: d.data().nama }))))).flat().sort((a, b) => cmp(a.tanggal, b.tanggal)); },
-  karyaList: async p => (await getDocs(query(collection(db, 'karya'), where('siswaId', '==', p.siswaId)))).docs.map(d => ({ id: d.id, ...d.data(), mine: d.data().ownerUid === uid() })).sort((a, b) => cmp(b.tanggal, a.tanggal) || (b.dibuat - a.dibuat)),
-  karyaSave: async p => { if (p.foto.length > 900000) throw new Error('Foto terlalu besar.'); await addDoc(collection(db, 'karya'), { siswaId: p.siswaId, label: p.label, foto: p.foto, tanggal: p.tanggal, dibuat: Date.now(), ownerUid: uid(), pemilik: ME.nama }); },
-  karyaDelete: async p => { const r = doc(db, 'karya', p.id), c = await getDoc(r); if (!c.exists()) return; if (c.data().ownerUid !== uid()) throw new Error('Foto hanya bisa dihapus oleh guru yang mengunggahnya.'); await deleteDoc(r); },
-  karyaLabel: async p => { const r = doc(db, 'karya', p.id), c = await getDoc(r); if (!c.exists() || c.data().ownerUid !== uid()) throw new Error('Label hanya bisa diubah oleh guru yang mengunggahnya.'); await updateDoc(r, { label: p.label }); },
-  tahfidzAll: async () => { const o = { cfg: {}, rec: {} }; (await getDocs(C('tahfidz'))).docs.forEach(d => { if (d.id === '_cfg') o.cfg = d.data(); else o.rec[d.id] = d.data(); }); return o; },
-  tahfidzSave: async p => { await setDoc(D('tahfidz', p.siswaId), { skor: p.skor, catatan: p.catatan || '', diubah: Date.now() }); },
-  tahfidzCfg: async p => { await setDoc(D('tahfidz', '_cfg'), p); },
+  karyaList: async p => { const col = collection(db, 'karya'), q = p.wali ? query(col, where('siswaId', '==', p.siswaId), where('kelas', '==', p.kelas)) : query(col, where('siswaId', '==', p.siswaId), where('guruId', '==', uid())); return (await getDocs(q)).docs.map(d => ({ id: d.id, ...d.data(), mine: (d.data().guruId || d.data().ownerUid) === uid() })).sort((x, y) => cmp(y.tanggal, x.tanggal) || (y.dibuat - x.dibuat)); },
+  karyaSave: async p => { if (p.foto.length > 900000) throw new Error('Foto terlalu besar.'); await addDoc(collection(db, 'karya'), { siswaId: p.siswaId, kelas: p.kelas || '', guruId: uid(), label: p.label, foto: p.foto, tanggal: p.tanggal, dibuat: Date.now(), ownerUid: uid(), pemilik: ME.nama }); },
+  karyaDelete: async p => { const r = doc(db, 'karya', p.id), c = await getDoc(r); if (!c.exists()) return; if ((c.data().guruId || c.data().ownerUid) !== uid()) throw new Error('Foto hanya bisa dihapus oleh guru yang mengunggahnya.'); await deleteDoc(r); },
+  karyaLabel: async p => { const r = doc(db, 'karya', p.id), c = await getDoc(r); if (!c.exists() || (c.data().guruId || c.data().ownerUid) !== uid()) throw new Error('Label hanya bisa diubah oleh guru yang mengunggahnya.'); await updateDoc(r, { label: p.label }); },
+  tahfidzAll: async p => {
+    const o = { cfg: {}, rec: {} }, col = collection(db, 'tahfidz'), c = await getDoc(doc(db, 'tahfidz', '_cfg')); if (c.exists()) o.cfg = c.data();
+    const qs = p.semua ? [col] : [query(col, where('ownerUid', '==', uid())), ...(p.wali || []).map(k => query(col, where('kelas', '==', k)))];
+    for (const q of qs) (await getDocs(q)).docs.forEach(d => { if (d.id !== '_cfg') o.rec[d.id] = { ...d.data(), mine: p.semua || d.data().ownerUid === uid() }; });
+    return o;
+  },
+  tahfidzSave: async p => { await setDoc(doc(db, 'tahfidz', p.siswaId), { siswaId: p.siswaId, kelas: p.kelas || '', skor: p.skor, catatan: p.catatan || '', diubah: Date.now(), oleh: ME.nama, ownerUid: p.ownerUid || uid() }); },
+  tahfidzCfg: async p => { await setDoc(doc(db, 'tahfidz', '_cfg'), p); },
   rubrikList: async () => (await getDocs(C('rubrik'))).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.nama || '').localeCompare(b.nama || '', 'id')),
   rubrikSave: async p => { const o = { nama: p.nama, kriteria: p.kriteria, diubah: Date.now() }; if (p.id) { await setDoc(D('rubrik', p.id), o); return p.id; } return (await addDoc(C('rubrik'), o)).id; },
   rubrikDelete: async p => { await deleteDoc(D('rubrik', p.id)); },
@@ -2077,17 +2090,17 @@ const A = {
     const ts = Array.from({ length: 5 }, (_, i) => (r.ts && r.ts[i] != null ? r.ts[i] : '')); ts[p.tugas - 1] = String(p.skor);
     rows[p.siswaId] = { ts, u: r.u != null ? r.u : '' }; await setDoc(ref, { kelas: p.kelas, rows });
   },
-  soalList: async () => { const adm = (await getDoc(doc(db, 'admins', uid()))).exists(); return (await getDocs(collection(db, 'soal'))).docs.map(d => { const x = d.data(), mine = x.ownerUid === uid(); return { id: d.id, ...x, mine, bisaHapus: mine || adm }; }).sort((a, b) => (b.dibuat || 0) - (a.dibuat || 0)); },
+  soalList: async () => { const adm = (await getDoc(doc(db, 'admins', uid()))).exists(); return (await getDocs(collection(db, 'soal'))).docs.map(d => { const x = d.data(), mine = (x.guruId || x.ownerUid) === uid(); return { id: d.id, ...x, mine, bisaHapus: mine || adm }; }).sort((a, b) => (b.dibuat || 0) - (a.dibuat || 0)); },
   soalSave: async p => {
     const o = { tipe: p.tipe, mapel: p.mapel || '', teks: p.teks, gambar: p.gambar || '' }; if (p.tipe === 'pg') { o.opsi = p.opsi; o.opsiGambar = p.opsiGambar; o.kunci = p.kunci; } else if (p.tipe === 'esai') { o.pedoman = p.pedoman || ''; o.pedomanGambar = p.pedomanGambar || ''; } else o.pasangan = p.pasangan;
     if (p.id) {
       const cur = await getDoc(doc(db, 'soal', p.id));
-      if (cur.exists() && cur.data().ownerUid === uid()) { await setDoc(doc(db, 'soal', p.id), { ...o, ownerUid: uid(), pemilik: cur.data().pemilik, dibuat: cur.data().dibuat, diubah: Date.now() }); return { id: p.id, salinan: false }; }
-      const r = await addDoc(collection(db, 'soal'), { ...o, ownerUid: uid(), pemilik: ME.nama, asalId: p.id, dibuat: Date.now() }); return { id: r.id, salinan: true };
+      if (cur.exists() && (cur.data().guruId || cur.data().ownerUid) === uid()) { await setDoc(doc(db, 'soal', p.id), { ...o, ownerUid: uid(), guruId: uid(), pemilik: cur.data().pemilik, dibuat: cur.data().dibuat, diubah: Date.now() }); return { id: p.id, salinan: false }; }
+      const r = await addDoc(collection(db, 'soal'), { ...o, ownerUid: uid(), guruId: uid(), pemilik: ME.nama, asalId: p.id, dibuat: Date.now() }); return { id: r.id, salinan: true };
     }
-    const r = await addDoc(collection(db, 'soal'), { ...o, ownerUid: uid(), pemilik: ME.nama, dibuat: Date.now() }); return { id: r.id, salinan: false };
+    const r = await addDoc(collection(db, 'soal'), { ...o, ownerUid: uid(), guruId: uid(), pemilik: ME.nama, dibuat: Date.now() }); return { id: r.id, salinan: false };
   },
-  soalDelete: async p => { const ref = doc(db, 'soal', p.id), cur = await getDoc(ref); if (!cur.exists()) return; if (cur.data().ownerUid !== uid() && !(await getDoc(doc(db, 'admins', uid()))).exists()) throw new Error('Soal guru lain tidak bisa dihapus.'); await deleteDoc(ref); },
+  soalDelete: async p => { const ref = doc(db, 'soal', p.id), cur = await getDoc(ref); if (!cur.exists()) return; if ((cur.data().guruId || cur.data().ownerUid) !== uid() && !(await getDoc(doc(db, 'admins', uid()))).exists()) throw new Error('Soal guru lain tidak bisa dihapus.'); await deleteDoc(ref); },
   undanganList: async () => (await getDocs(collection(db, 'undangan'))).docs.map(d => ({ ...d.data(), email: d.id })).sort((a, b) => cmp(a.email, b.email)),
   undanganTambah: async p => {
     let ok = 0; const salah = [];
@@ -2104,6 +2117,7 @@ const A = {
   siswaEdit: async p => { if (!p.nama.trim() || !String(p.kelas).trim()) throw new Error('Nama dan kelas wajib diisi.'); await updateDoc(D('siswa', p.id), { nama: p.nama.trim(), kelas: String(p.kelas).trim(), gender: p.gender || '' }); },
   siswaHapus: async p => deleteDoc(D('siswa', p.id)),
   adminSetAktif: async p => updateDoc(doc(db, 'guru', p.uid), { aktif: !!p.aktif }),
+  adminSetKoor: async p => { if (p.aktif) await setDoc(doc(db, 'koordinator', p.uid), { aktif: true, dibuat: Date.now() }); else await deleteDoc(doc(db, 'koordinator', p.uid)); },
   adminSetWali: async p => {
     const ks = [...new Set((await all('siswa')).map(x => String(x.kelas).trim()))], kelas = p.kelas.map(k => ks.find(x => norm(x) === norm(k)) || k);
     if (kelas.length) await setDoc(doc(db, 'wali', p.uid), { kelas }); else await deleteDoc(doc(db, 'wali', p.uid));
