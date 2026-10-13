@@ -268,6 +268,12 @@ main{padding:26px 44px 70px}
   #tabbar button.on svg{background:var(--soft);border-radius:99px;padding:3px 14px;box-sizing:content-box;width:20px}
   #burger{display:none}
 }
+
+/* sidebar: menu bisa digulir, tombol Keluar selalu terlihat */
+#side{overflow:hidden}
+#nav{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin}
+.side-foot{flex:none}
+.nav{padding-top:8px;padding-bottom:8px}
 </style>
 </head>
 <body>
@@ -2117,7 +2123,7 @@ const A = {
   siswaEdit: async p => { if (!p.nama.trim() || !String(p.kelas).trim()) throw new Error('Nama dan kelas wajib diisi.'); await updateDoc(D('siswa', p.id), { nama: p.nama.trim(), kelas: String(p.kelas).trim(), gender: p.gender || '' }); },
   siswaHapus: async p => deleteDoc(D('siswa', p.id)),
   adminSetAktif: async p => updateDoc(doc(db, 'guru', p.uid), { aktif: !!p.aktif }),
-  adminSetKoor: async p => { if (p.aktif) await setDoc(doc(db, 'koordinator', p.uid), { aktif: true, dibuat: Date.now() }); else await deleteDoc(doc(db, 'koordinator', p.uid)); },
+  adminSetKoor: async p => { try { if (p.aktif) await setDoc(doc(db, 'koordinator', p.uid), { aktif: true, dibuat: Date.now() }); else await deleteDoc(doc(db, 'koordinator', p.uid)); } catch (e) { if (e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''))) throw new Error('Aturan Firestore belum memuat koleksi "koordinator". Publikasikan aturan terbaru di Firebase Console, lalu coba lagi.'); throw e; } },
   adminSetWali: async p => {
     const ks = [...new Set((await all('siswa')).map(x => String(x.kelas).trim()))], kelas = p.kelas.map(k => ks.find(x => norm(x) === norm(k)) || k);
     if (kelas.length) await setDoc(doc(db, 'wali', p.uid), { kelas }); else await deleteDoc(doc(db, 'wali', p.uid));
