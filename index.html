@@ -1938,7 +1938,7 @@ const cmp = (a, b) => String(a).localeCompare(String(b), 'id', { numeric: true }
 const hKey = (t, k) => t + '_' + encodeURIComponent(k);
 let ME = { nama: '' };
 const prof = async u => {
-  const [a, w, g, kk] = await Promise.all([getDoc(doc(db, 'admins', u.uid)), getDoc(doc(db, 'wali', u.uid)), getDoc(doc(db, 'guru', u.uid)), getDoc(doc(db, 'koordinator', u.uid))]);
+  const [a, w, g, kk] = await Promise.all([getDoc(doc(db, 'admins', u.uid)), getDoc(doc(db, 'wali', u.uid)), getDoc(doc(db, 'guru', u.uid)), getDoc(doc(db, 'koordinator', u.uid)).catch(() => null)]);
   const admin = a.exists(), nama = u.displayName || u.email.split('@')[0];
   if (!admin) {
     if (!/@gistrav\.com$/i.test(u.email)) { await signOut(auth); throw new Error('Hanya email @gistrav.com yang dapat dipakai.'); }
@@ -1947,7 +1947,7 @@ const prof = async u => {
   if (!(admin || (g.exists() && g.data().aktif === true))) { await signOut(auth); throw new Error('Akun Anda menunggu persetujuan admin.'); }
   try { localStorage.setItem('dg_last', String(Date.now())); } catch (e) {}
   ME.nama = (g.exists() && g.data().nama) || nama;
-  return { nama: ME.nama, admin, pwAwal: g.exists() && g.data().pwAwal === true, wali: w.exists() ? (w.data().kelas || []) : [], koor: kk.exists() };
+  return { nama: ME.nama, admin, pwAwal: g.exists() && g.data().pwAwal === true, wali: w.exists() ? (w.data().kelas || []) : [], koor: !!(kk && kk.exists()) };
 };
 const load = async () => { const [s, h] = await Promise.all([all('siswa'), all('halaqah')]); return { s, h, m: new Map(s.map(x => [x.id, x])) }; };
 const members = (g, m) => (g.anggota || []).map(i => m.get(i)).filter(Boolean);
@@ -2063,7 +2063,7 @@ const A = {
   },
   jurnalDelete: async p => { const lama = ((await getDoc(D('jurnal', p.id))).data() || {}).kelasSiswa || []; await sinkron(p.id, null, lama); await deleteDoc(D('jurnal', p.id)); },
   adminGuru: async () => {
-    const [gs, ws, kd] = await Promise.all([getDocs(collection(db, 'guru')), getDocs(collection(db, 'wali')), getDocs(collection(db, 'koordinator'))]);
+    const [gs, ws, kd] = await Promise.all([getDocs(collection(db, 'guru')), getDocs(collection(db, 'wali')), getDocs(collection(db, 'koordinator')).catch(() => ({ docs: [] }))]);
     const wali = Object.fromEntries(ws.docs.map(d => [d.id, d.data().kelas || []]));
     const koorSet = new Set(kd.docs.map(d => d.id));
     return (await Promise.all(gs.docs.map(async d => { const j = await allOf(d.id, 'jurnal'); return { uid: d.id, ...d.data(), wali: wali[d.id] || [], koor: koorSet.has(d.id), jurnal: j.length, terakhir: j.map(x => x.tanggal).sort().pop() || '' }; }))).sort((a, b) => cmp(a.nama, b.nama));
