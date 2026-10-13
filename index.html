@@ -468,9 +468,9 @@ async function enter() {
 }
 
 /* ============ Navigasi ============ */
-const NAV = [['beranda', 'Beranda', 'home'], ['jurnal', 'Jurnal Mengajar', 'book'], ['hadir', 'Daftar Hadir', 'check'], ['nilai', 'Kalkulator Nilai', 'calc'], ['picker', 'Pemilih Nama Acak', 'shuffle'], ['tim', 'Pembagi Kelompok', 'users'], ['siswa', 'Kelas/Halaqah & Siswa', 'user'], ['rpp', 'Generator RPP', 'book'], ['karya', 'Portofolio Siswa', 'user'], ['kartu', 'Kartu Laporan', 'check'], ['pengaturan', 'Pengaturan', 'gear']];
+const NAV = [['beranda', 'Beranda', 'home'], ['jurnal', 'Jurnal Mengajar', 'book'], ['hadir', 'Daftar Hadir', 'check'], ['nilai', 'Kalkulator Nilai', 'calc'], ['picker', 'Pemilih Nama Acak', 'shuffle'], ['tim', 'Pembagi Kelompok', 'users'], ['siswa', 'Kelas/Halaqah & Siswa', 'user'], ['rpp', 'Generator RPP', 'book'], ['soal', 'Bank Soal', 'book'], ['karya', 'Portofolio Siswa', 'user'], ['kartu', 'Kartu Laporan', 'check'], ['pengaturan', 'Pengaturan', 'gear']];
 function buildNav() {
-  const items = NAV.concat(S.user && S.user.admin ? [['admin', 'Panel Admin', 'shield'], ['induk', 'Data Induk Siswa', 'user']] : [], S.user && S.user.wali && S.user.wali.length ? [['wali', 'Jurnal Kelas Wali', 'users']] : []);
+  const items = NAV.concat(S.user && S.user.admin ? [['admin', 'Panel Admin', 'shield'], ['induk', 'Data Induk Siswa', 'user']] : [], S.user && S.user.wali && S.user.wali.length ? [['wali', 'Jurnal Kelas Wali', 'users'], ['karyaWali', 'Portofolio Kelas Wali', 'user']] : []);
   $('#nav').innerHTML = items.map(n => `<button class="nav" data-p="${n[0]}">${ico(n[2])}<span>${n[1]}</span></button>`).join('');
 }
 $('#logout').innerHTML = ico('out') + '<span>Keluar</span>';
@@ -484,7 +484,7 @@ function closeSide() { $('#side').classList.remove('open'); $('#scrim').classLis
 $('#logout').onclick = async () => { try { await call('logout'); } catch (e) {} clearSession(); showLogin(); };
 document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
 
-const PAGES = { beranda: pBeranda, jurnal: pJurnal, hadir: pHadir, nilai: pNilai, picker: pPicker, tim: pTim, siswa: pSiswa, pengaturan: pPengaturan, admin: pAdminFB, wali: pWali, induk: pInduk, rpp: pRpp, karya: pKarya, kartu: pKartu };
+const PAGES = { beranda: pBeranda, jurnal: pJurnal, hadir: pHadir, nilai: pNilai, picker: pPicker, tim: pTim, siswa: pSiswa, pengaturan: pPengaturan, admin: pAdminFB, wali: pWali, induk: pInduk, rpp: pRpp, tahfidz: pTahfidz, rubrik: pRubrik, soal: pSoal, karya: pKarya, karyaWali: pKaryaWali, kartu: pKartu };
 async function go(p) {
   PAGE = p; closeSide();
   $$('#nav .nav').forEach(b => b.classList.toggle('on', b.dataset.p === p));
@@ -732,7 +732,7 @@ async function pNilai() {
   const v = $('#view');
   const w = (store.get('w2') || '40,60,75').split(',').map(Number);
   NS.nt = Math.min(5, Math.max(1, +store.get('nt') || NS.nt));
-  v.innerHTML = `<div class="ph"><h2>Kalkulator Nilai</h2></div>
+  v.innerHTML = `${tabsNilai('nilai')}<div class="ph"><h2>Kalkulator Nilai</h2></div>
     <div class="card" style="margin-bottom:16px"><div class="filters">
       <div><label class="f">Kelas/Halaqah</label><select id="nk">${kelasOpts(NS.kelas)}</select></div>
       <div><label class="f">Jumlah kolom tugas (maks. 5)</label><select id="nt">${[1, 2, 3, 4, 5].map(n => `<option ${n === NS.nt ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
@@ -967,7 +967,7 @@ async function pPicker() {
 }
 
 /* ============ Pembagi Kelompok ============ */
-const TK = { src: 'kelas', kelas: '', gender: '', mode: 'jumlah', n: 4, balance: true, hasil: null };
+const TK = { src: 'kelas', kelas: '', gender: '', mode: 'jumlah', n: 4, balance: true, pisah: true, hasil: null };
 async function pTim() {
   const ks = kelasAll(), cust = TK.src === 'custom';
   if (!ks.includes(TK.kelas)) TK.kelas = ks[0] || '';
@@ -1448,6 +1448,99 @@ const fxRppHtml = t => {
   });
   return h + (ul ? '</ul>' : '') + (tb ? '</table>' : '');
 };
+/* ============ Bank Soal ============ */
+const SO = { tipe: '', q: '', saya: false }, SEL = new Set();
+const TIPE = { pg: 'Pilihan ganda', esai: 'Esai', jodoh: 'Menjodohkan' };
+const soalImg = f => new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(f); im.onload = () => { const k = Math.min(1, 480 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok(c.toDataURL('image/jpeg', .7)); }; im.onerror = () => no(new Error('Gambar tidak bisa dibaca.')); im.src = u; });
+const imgBox = (k, v) => `<span class="row" style="gap:6px" data-b="${k}"><input type="file" accept="image/*" data-k="${k}" style="max-width:150px"><img src="${v || ''}" alt="" style="max-height:44px;${v ? '' : 'display:none'}"><button type="button" class="btn ghost" data-rm="${k}" style="padding:2px 8px;${v ? '' : 'display:none'}">Hapus</button></span>`;
+const sImg = (g, h = 90) => g ? `<img src="${g}" alt="" style="max-height:${h}px;display:block;margin:4px 0;border-radius:4px">` : '';
+function lembarSoal(items, d) {
+  const H = 'ABCDEFGHIJ'.split(''), im = g => g ? `<br><img src="${g}" style="max-height:130px">` : '';
+  const pg = items.filter(s => s.tipe === 'pg'), jd = items.filter(s => s.tipe === 'jodoh'), es = items.filter(s => s.tipe === 'esai');
+  let n = 0, h = `<h2 style="text-align:center">${esc(d.judul)}</h2>${d.info ? `<p style="text-align:center">${esc(d.info)}</p>` : ''}<p>Nama: ........................ Tanggal: ............</p>`;
+  const kunci = [];
+  if (pg.length) { h += '<h3>A. Pilihan ganda</h3>'; pg.forEach(s => { n++; kunci.push(`<div>${n}. ${H[s.kunci]}</div>`); h += `<p>${n}. ${esc(s.teks)}${im(s.gambar)}</p><div style="margin-left:24px">${s.opsi.map((o, i) => `<div>${H[i]}. ${esc(o)}${im(s.opsiGambar && s.opsiGambar[i])}</div>`).join('')}</div>`; }); }
+  if (jd.length) { h += '<h3>B. Menjodohkan</h3>'; jd.forEach(s => { n++; const ps = s.pasangan, acak = shuffle(ps.map((p, i) => i)); kunci.push(`<div>${n}. ${ps.map((p, i) => `${i + 1}-${H[acak.indexOf(i)]}`).join(', ')}</div>`); h += `<p>${n}. ${esc(s.teks)}${im(s.gambar)}</p><table width="100%">${ps.map((p, i) => `<tr><td width="50%">${i + 1}. ${esc(p.kiri)}${im(p.kiriG)}</td><td>${H[i]}. ${esc(ps[acak[i]].kanan)}${im(ps[acak[i]].kananG)}</td></tr>`).join('')}</table>`; }); }
+  if (es.length) { h += '<h3>C. Esai</h3>'; es.forEach(s => { n++; kunci.push(`<div>${n}. ${s.pedoman ? esc(s.pedoman) : '(tanpa pedoman)'}${im(s.pedomanGambar)}</div>`); h += `<p>${n}. ${esc(s.teks)}${im(s.gambar)}</p>` + '<p>..............................................................................</p>'.repeat(3); }); }
+  if (d.kunci) h += `<h3 style="page-break-before:always">Kunci jawaban</h3>${kunci.join('')}`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(d.judul)}</title><style>body{font-family:'DejaVu Sans',Arial,sans-serif;font-size:12pt}td{vertical-align:top;padding:4px}img{max-width:220px}</style></head><body>${h}</body></html>`;
+}
+async function pSoal() {
+  $('#view').innerHTML = `<div class="ph"><div><h2>Bank Soal</h2><div class="muted">Dipakai bersama semua guru</div></div><div class="row"><button class="btn ghost" id="sx">Susun lembar soal (${SEL.size})</button><button class="btn" id="sa">Tambah soal</button></div></div>
+    <div class="row" style="margin-bottom:14px;flex-wrap:wrap"><select id="st"><option value="">Semua tipe</option>${Object.entries(TIPE).map(([k, v]) => `<option value="${k}" ${SO.tipe === k ? 'selected' : ''}>${v}</option>`).join('')}</select><input id="sq" placeholder="Cari soal…" value="${esc(SO.q)}"><label class="row" style="gap:6px"><input type="checkbox" id="ss" ${SO.saya ? 'checked' : ''}> Hanya soal saya</label></div><div id="sl"></div>`;
+  let L = [];
+  const detail = s => s.tipe === 'pg' ? `<ol type="A" style="margin:0 0 8px;padding-left:22px">${s.opsi.map((o, i) => `<li>${i === s.kunci ? '<b>' + esc(o) + '</b>' : esc(o)}${sImg((s.opsiGambar || [])[i], 60)}</li>`).join('')}</ol>`
+    : s.tipe === 'esai' ? ((s.pedoman || s.pedomanGambar) ? `<div class="muted" style="margin-bottom:8px">Pedoman: ${esc(s.pedoman || '')}${sImg(s.pedomanGambar, 60)}</div>` : '')
+    : `<div class="muted" style="margin-bottom:8px">${(s.pasangan || []).map(p => esc(p.kiri) + (p.kiriG ? ' [gambar]' : '') + ' ↔ ' + esc(p.kanan) + (p.kananG ? ' [gambar]' : '')).join('<br>')}</div>`;
+  const draw = () => {
+    const q = SO.q.toLowerCase();
+    const t = L.filter(s => (!SO.tipe || s.tipe === SO.tipe) && (!SO.saya || s.mine) && (!q || (s.teks + ' ' + (s.mapel || '')).toLowerCase().includes(q)));
+    $('#sl').innerHTML = t.length ? t.map(s => `<div class="card" style="margin-bottom:10px"><div class="row" style="justify-content:space-between"><label class="row" style="gap:8px"><input type="checkbox" data-c="${s.id}" ${SEL.has(s.id) ? 'checked' : ''}><span class="badge">${TIPE[s.tipe]}</span></label><span class="muted" style="font-size:12px">${esc(s.pemilik || '')}${s.mapel ? ', ' + esc(s.mapel) : ''}</span></div><p style="margin:8px 0;white-space:pre-wrap">${esc(s.teks)}</p>${sImg(s.gambar, 120)}${detail(s)}<div class="row end"><button class="btn ghost" data-e="${s.id}">Ubah</button>${s.bisaHapus ? `<button class="btn danger" data-d="${s.id}">Hapus</button>` : ''}</div></div>`).join('') : '<div class="card empty">Belum ada soal yang cocok.</div>';
+    $('#sx').textContent = `Susun lembar soal (${SEL.size})`;
+  };
+  const load = async () => { L = await call('soalList'); draw(); };
+  const form = s => {
+    const e = s || { tipe: 'pg', opsi: ['', ''], kunci: 0 }, n = Math.max(2, (e.opsi || []).length), P = e.pasangan || [];
+    let np = Math.max(2, P.length); const IMG = { q: e.gambar || '', ped: e.pedomanGambar || '' };
+    for (let i = 0; i < 10; i++) { IMG['o' + i] = (e.opsiGambar || [])[i] || ''; IMG['pk' + i] = (P[i] || {}).kiriG || ''; IMG['pb' + i] = (P[i] || {}).kananG || ''; }
+    modal(s ? 'Ubah soal' : 'Tambah soal', `
+      <div class="fld"><label class="f">Tipe</label><select name="tipe" id="ft">${Object.entries(TIPE).map(([k, v]) => `<option value="${k}" ${e.tipe === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      <div class="fld"><label class="f">Mapel (opsional)</label><input name="mapel" value="${esc(e.mapel || '')}"></div>
+      <div class="fld"><label class="f">Soal</label><textarea name="teks" rows="3">${esc(e.teks || '')}</textarea>${imgBox('q', IMG.q)}</div>
+      <div data-t="pg"><div class="fld"><label class="f">Jumlah pilihan</label><select name="jumlah" id="fj">${[2, 3, 4, 5].map(i => `<option ${i === n ? 'selected' : ''}>${i}</option>`).join('')}</select></div>
+        ${'ABCDE'.split('').map((h, i) => `<div class="row" data-o="${i}" style="margin-bottom:6px;flex-wrap:wrap"><input type="radio" name="kunci" value="${i}" ${(e.kunci || 0) === i ? 'checked' : ''}><b>${h}</b><input name="o${i}" class="grow" value="${esc((e.opsi || [])[i] || '')}">${imgBox('o' + i, IMG['o' + i])}</div>`).join('')}
+        <div class="muted" style="font-size:12px;margin-bottom:8px">Pilih lingkaran untuk menandai kunci jawaban. Setiap pilihan boleh berupa teks, gambar, atau keduanya.</div></div>
+      <div data-t="esai" class="fld"><label class="f">Pedoman jawaban (opsional)</label><textarea name="pedoman" rows="3">${esc(e.pedoman || '')}</textarea>${imgBox('ped', IMG.ped)}</div>
+      <div data-t="jodoh"><label class="f">Pasangan (maks. 10), teks dan/atau gambar di tiap sisi</label>
+        ${[...Array(10).keys()].map(i => `<div class="row" data-p="${i}" style="margin-bottom:8px;flex-wrap:wrap"><b>${i + 1}</b><input name="pk${i}" placeholder="Kiri" class="grow" value="${esc((P[i] || {}).kiri || '')}">${imgBox('pk' + i, IMG['pk' + i])}<input name="pb${i}" placeholder="Kanan" class="grow" value="${esc((P[i] || {}).kanan || '')}">${imgBox('pb' + i, IMG['pb' + i])}</div>`).join('')}
+        <button type="button" class="btn ghost" id="fp">Tambah pasangan</button></div>`,
+      async d => {
+        const o = { id: s ? s.id : null, tipe: d.tipe, mapel: (d.mapel || '').trim(), teks: (d.teks || '').trim(), gambar: IMG.q };
+        if (!o.teks && !o.gambar) throw new Error('Isi soal (teks atau gambar) wajib diisi.');
+        if (d.tipe === 'pg') {
+          const k = +d.jumlah, id = [...Array(k).keys()]; o.opsi = id.map(i => (d['o' + i] || '').trim()); o.opsiGambar = id.map(i => IMG['o' + i]);
+          if (id.some(i => !o.opsi[i] && !o.opsiGambar[i])) throw new Error('Setiap pilihan harus punya teks atau gambar.');
+          o.kunci = +(d.kunci || 0); if (o.kunci >= k) throw new Error('Pilih kunci jawaban pada salah satu pilihan.');
+        } else if (d.tipe === 'esai') { o.pedoman = (d.pedoman || '').trim(); o.pedomanGambar = IMG.ped; }
+        else {
+          o.pasangan = [...Array(np).keys()].map(i => ({ kiri: (d['pk' + i] || '').trim(), kanan: (d['pb' + i] || '').trim(), kiriG: IMG['pk' + i], kananG: IMG['pb' + i] }));
+          if (o.pasangan.some(p => (!p.kiri && !p.kiriG) || (!p.kanan && !p.kananG))) throw new Error('Isi kedua sisi (teks atau gambar) pada setiap pasangan, atau kurangi jumlah pasangan.');
+        }
+        if (JSON.stringify(o).length > 900000) throw new Error('Total gambar terlalu besar. Kurangi jumlah gambar.');
+        const r = await call('soalSave', o);
+        toast(r.salinan ? 'Soal guru lain disimpan sebagai salinan milik Anda.' : 'Soal disimpan.'); await load();
+      });
+    const sh = $('#sheet');
+    const sync = () => { const t = $('#ft').value, k = +$('#fj').value; $$('[data-t]').forEach(x => x.style.display = x.dataset.t === t ? '' : 'none'); $$('[data-o]').forEach(x => x.style.display = +x.dataset.o < k ? '' : 'none'); $$('[data-p]').forEach(x => x.style.display = +x.dataset.p < np ? '' : 'none'); $('#fp').style.display = np < 10 ? '' : 'none'; };
+    $('#ft').onchange = $('#fj').onchange = sync; $('#fp').onclick = () => { np++; sync(); }; sync();
+    const tampil = (k, on) => { const b = sh.querySelector(`[data-b="${k}"]`), m = b.querySelector('img'); m.src = IMG[k]; m.style.display = on ? '' : 'none'; b.querySelector('button').style.display = on ? '' : 'none'; if (!on) b.querySelector('input').value = ''; };
+    sh.onchange = async ev => { const k = ev.target.dataset && ev.target.dataset.k, f = k && ev.target.files[0]; if (!f) return; try { IMG[k] = await soalImg(f); tampil(k, true); } catch (er) { toast(er.message, 'err'); } };
+    sh.onclick = ev => { const k = ev.target.dataset && ev.target.dataset.rm; if (k) { IMG[k] = ''; tampil(k, false); } };
+  };
+  const ekspor = () => {
+    const items = L.filter(x => SEL.has(x.id)); if (!items.length) return toast('Centang soal yang akan disusun.', 'err');
+    modal('Susun lembar soal', `<div class="fld"><label class="f">Judul</label><input name="judul" value="Lembar Soal"></div><div class="fld"><label class="f">Mapel / kelas (opsional)</label><input name="info"></div><div class="fld"><label class="f">Format</label><select name="fmt"><option value="doc">Word (.doc)</option><option value="pdf">PDF (cetak)</option></select></div><label class="row" style="gap:6px;margin-bottom:10px"><input type="checkbox" name="kunci" checked> Sertakan kunci jawaban di halaman terpisah</label>`, async d => {
+      const html = lembarSoal(items, d);
+      if (d.fmt === 'doc') fxUnduh('lembar-soal.doc', html, 'application/msword');
+      else { const w = window.open('', '_blank'); if (!w) throw new Error('Izinkan pop-up untuk membuat PDF.'); w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 500); }
+    }, 'Buat');
+  };
+  const v = $('#view');
+  v.onclick = async e => {
+    if (e.target.closest('#sa')) return form(null);
+    if (e.target.closest('#sx')) return ekspor();
+    const b = e.target.closest('[data-e],[data-d]'); if (!b) return;
+    if (b.dataset.e) return form(L.find(x => x.id === b.dataset.e));
+    if (await confirmBox('Hapus soal ini dari bank soal?')) { try { await call('soalDelete', { id: b.dataset.d }); SEL.delete(b.dataset.d); await load(); } catch (er) { toast(er.message, 'err'); } }
+  };
+  v.onchange = v.oninput = e => {
+    const c = e.target.dataset && e.target.dataset.c;
+    if (c) { e.target.checked ? SEL.add(c) : SEL.delete(c); $('#sx').textContent = `Susun lembar soal (${SEL.size})`; return; }
+    if (e.target.id === 'st') SO.tipe = e.target.value; else if (e.target.id === 'sq') SO.q = e.target.value; else if (e.target.id === 'ss') SO.saya = e.target.checked; else return; draw();
+  };
+  await load();
+}
+
 function pRpp() {
   const y = new Date().getFullYear(), th = new Date().getMonth() >= 6 ? y + '/' + (y + 1) : (y - 1) + '/' + y;
   $('#view').innerHTML = `<div class="ph"><h2>Generator RPP / Modul Ajar</h2></div><div class="card" style="margin-bottom:14px"><p class="muted" style="margin-top:0">Membuat draf modul ajar dengan struktur Informasi Umum, Komponen Inti, dan Lampiran Rubrik. Bagian bertanda "(tuliskan ...)" perlu Anda lengkapi. Draf disusun dari template, bukan AI.</p><div class="row"><div class="fld grow"><label class="f">Nama penyusun</label><input id="ru" value="${esc(S.user.nama)}"></div><div class="fld grow"><label class="f">Satuan pendidikan</label><input id="rs" placeholder="mis. SD ..."></div></div><div class="row"><div class="fld grow"><label class="f">Kelas / Semester</label><input id="rk" placeholder="mis. Kelas II / Semester I"></div><div class="fld grow"><label class="f">Tahun pelajaran</label><input id="rth" value="${th}"></div></div><div class="row"><div class="fld grow"><label class="f">Mata pelajaran</label><input id="rm"></div><div class="fld grow"><label class="f">Tema / topik</label><input id="rt"></div></div><div class="row"><div class="fld grow"><label class="f">Jumlah pertemuan</label><input id="rp" type="number" min="1" max="8" value="1"></div><div class="fld grow"><label class="f">JP per pertemuan</label><input id="rj" type="number" min="1" value="2"></div><div class="fld grow"><label class="f">Menit per JP</label><input id="rw" type="number" min="10" value="30"></div><div class="fld grow"><label class="f">Jumlah peserta didik</label><input id="rn" type="number" min="1"></div></div><div class="fld"><label class="f">Model pembelajaran</label><select id="rd">${Object.keys(fxMet).map(k => `<option>${k}</option>`).join('')}</select></div><button class="btn" id="rg">Buat draf</button></div><div id="ro"></div>`;
@@ -1462,39 +1555,42 @@ function pRpp() {
   };
 }
 const fxKecil = f => new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(f); im.onload = () => { const k = Math.min(1, 1000 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok(c.toDataURL('image/jpeg', 0.7)); }; im.onerror = () => no(new Error('Gambar tidak bisa dibaca.')); im.src = u; });
+let PKW = false;
+async function pKaryaWali() { PKW = true; try { await pKarya(); } finally { PKW = false; } }
 async function pKarya() {
-  await muatSiswa(); const v = $('#view'), H = S.halaqah;
-  v.innerHTML = `<div class="ph"><h2>Portofolio Siswa</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto</label><div class="row"><button type="button" class="btn ghost" id="kam">Ambil foto (kamera)</button><label class="btn ghost" for="kf" style="cursor:pointer">Pilih dari galeri</label></div><input id="kf" type="file" accept="image/*" multiple hidden><input id="kf1" type="file" accept="image/*" capture="environment" hidden><div class="muted" id="kn" style="font-size:13px;margin-top:6px"></div></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Ekspor portofolio ke PDF</label><select id="kx"><option value="siswa">Siswa yang dipilih</option><option value="kelas">Seluruh kelas/halaqah ini</option><option value="custom">Pilih siswa sendiri (custom)</option></select></div><button class="btn" id="kp" style="align-self:flex-end">Buat PDF</button></div><div id="kcl" class="hidden" style="max-height:220px;overflow:auto;margin-top:10px"></div><p class="muted" style="font-size:13px;margin:8px 0 0">Jendela cetak akan terbuka. Pilih "Simpan sebagai PDF" sebagai printer. Pada mode kelas dan custom, siswa yang belum punya foto dilewati.</p></div><div id="kg"></div>`;
+  await muatSiswa(); const v = $('#view'), H = PKW ? (S.user.wali || []).map(x => ({ id: 'k:' + x, nama: 'Kelas ' + x })) : S.halaqah, inK = (s, id) => id.startsWith('k:') ? s.kelasAsli === id.slice(2) : s.halaqahId === id;
+  v.innerHTML = `<div class="ph"><h2>${PKW ? 'Portofolio Kelas Wali' : 'Portofolio Siswa'}</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ka">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="kb"></select></div></div><div class="row"><div class="fld grow"><label class="f">Label</label><input id="kl" list="kdl" placeholder="mis. Latihan Bab 1"><datalist id="kdl"><option>Latihan</option><option>Ujian praktik</option><option>Proyek</option></datalist></div><div class="fld grow"><label class="f">Foto</label><div class="row"><button type="button" class="btn ghost" id="kam">Ambil foto (kamera)</button><label class="btn ghost" for="kf" style="cursor:pointer">Pilih dari galeri</label></div><input id="kf" type="file" accept="image/*" multiple hidden><input id="kf1" type="file" accept="image/*" capture="environment" hidden><div class="muted" id="kn" style="font-size:13px;margin-top:6px"></div></div></div><button class="btn" id="ku">Simpan foto</button><p class="muted" style="font-size:13px;margin:8px 0 0">Foto dikecilkan otomatis sebelum disimpan.</p></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Ekspor portofolio ke PDF</label><select id="kx"><option value="siswa">Siswa yang dipilih</option><option value="kelas">Seluruh kelas/halaqah ini</option><option value="custom">Pilih siswa sendiri (custom)</option></select></div><button class="btn" id="kp" style="align-self:flex-end">Buat PDF</button><button class="btn ghost" id="kw">Ekspor Word</button></div><div id="kcl" class="hidden" style="max-height:220px;overflow:auto;margin-top:10px"></div><p class="muted" style="font-size:13px;margin:8px 0 0">Jendela cetak akan terbuka. Pilih "Simpan sebagai PDF" sebagai printer. Pada mode kelas dan custom, siswa yang belum punya foto dilewati.</p></div><div id="kg"></div>`;
   let L = [];
   const gal = async () => {
     const id = $('#kb').value, g = $('#kg');
     if (!id) { g.innerHTML = '<div class="card empty">Belum ada siswa di kelompok ini.</div>'; return; }
     L = await call('karyaList', { siswaId: id });
-    g.innerHTML = L.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">${L.map(k => `<div class="card" style="padding:8px"><img src="${k.foto}" data-z="${k.id}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;cursor:pointer"><div style="font-size:13px;margin-top:6px"><b>${esc(k.label || 'Tanpa label')}</b><br><span class="muted">${fmtTgl(k.tanggal)}</span></div><button class="btn ghost sm" data-x="${k.id}" style="margin-top:6px">Hapus</button></div>`).join('')}</div>` : '<div class="card empty">Belum ada karya untuk siswa ini.</div>';
+    g.innerHTML = L.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">${L.map(k => `<div class="card" style="padding:8px"><img src="${k.foto}" data-z="${k.id}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;cursor:pointer"><div style="font-size:13px;margin-top:6px"><b>${esc(k.label || 'Tanpa label')}</b><br><span class="muted">${fmtTgl(k.tanggal)}</span></div><div class="muted" style="font-size:12px">${esc(k.pemilik || '')}</div>${k.mine ? `<div class="row" style="gap:6px;margin-top:6px"><button class="btn ghost sm" data-l="${k.id}">Label</button><button class="btn ghost sm" data-x="${k.id}">Hapus</button></div>` : ''}</div>`).join('')}</div>` : '<div class="card empty">Belum ada karya untuk siswa ini.</div>';
   };
-  const isi = () => { $('#kb').innerHTML = S.siswa.filter(s => s.halaqahId === $('#ka').value).sort((a, b) => a.nama.localeCompare(b.nama, 'id')).map(s => `<option value="${s.id}">${esc(s.nama)}</option>`).join(''); gal(); };
+  const isi = () => { $('#kb').innerHTML = S.siswa.filter(s => inK(s, $('#ka').value)).sort((a, b) => a.nama.localeCompare(b.nama, 'id')).map(s => `<option value="${s.id}">${esc(s.nama)}</option>`).join(''); gal(); };
   $('#ka').onchange = isi; $('#kb').onchange = gal;
   let pending = [];
-  const daftarCustom = () => { const seen = new Set(); $('#kcl').innerHTML = '<label class="row" style="gap:6px"><input type="checkbox" id="kall"> <b>Pilih semua</b></label>' + H.map(h => { const m = S.siswa.filter(s => s.halaqahId === h.id && !seen.has(s.id)); m.forEach(s => seen.add(s.id)); return m.length ? `<div class="muted" style="margin:8px 0 2px;font-size:13px">${esc(h.nama)}</div>` + m.map(s => `<label class="row" style="gap:6px"><input type="checkbox" value="${s.id}"> ${esc(s.nama)}</label>`).join('') : ''; }).join(''); $('#kall').onchange = e => $('#kcl').querySelectorAll('input[value]').forEach(i => { i.checked = e.target.checked; }); };
+  const daftarCustom = () => { const seen = new Set(); $('#kcl').innerHTML = '<label class="row" style="gap:6px"><input type="checkbox" id="kall"> <b>Pilih semua</b></label>' + H.map(h => { const m = S.siswa.filter(s => inK(s, h.id) && !seen.has(s.id)); m.forEach(s => seen.add(s.id)); return m.length ? `<div class="muted" style="margin:8px 0 2px;font-size:13px">${esc(h.nama)}</div>` + m.map(s => `<label class="row" style="gap:6px"><input type="checkbox" value="${s.id}"> ${esc(s.nama)}</label>`).join('') : ''; }).join(''); $('#kall').onchange = e => $('#kcl').querySelectorAll('input[value]').forEach(i => { i.checked = e.target.checked; }); };
   $('#kx').onchange = () => { const c = $('#kx').value === 'custom'; $('#kcl').classList.toggle('hidden', !c); if (c) daftarCustom(); };
-  $('#kp').onclick = async () => {
+  const ekspor = async word => {
     const mode = $('#kx').value;
-    let ids = mode === 'siswa' ? [$('#kb').value] : mode === 'kelas' ? S.siswa.filter(s => s.halaqahId === $('#ka').value).map(s => s.id) : [...$('#kcl').querySelectorAll('input[value]:checked')].map(i => i.value);
+    let ids = mode === 'siswa' ? [$('#kb').value] : mode === 'kelas' ? S.siswa.filter(s => inK(s, $('#ka').value)).map(s => s.id) : [...$('#kcl').querySelectorAll('input[value]:checked')].map(i => i.value);
     ids = [...new Set(ids.filter(Boolean))]; if (!ids.length) return toast('Pilih siswa dulu.', 'err');
-    const w = window.open('', '_blank'); if (!w) return toast('Izinkan pop-up untuk membuat PDF.', 'err');
-    w.document.write('<p style="font-family:sans-serif">Menyiapkan portofolio…</p>');
+    const w = word ? null : window.open('', '_blank'); if (!word && !w) return toast('Izinkan pop-up untuk membuat PDF.', 'err');
+    if (w) w.document.write('<p style="font-family:sans-serif">Menyiapkan portofolio…</p>');
     try {
       const mur = ids.map(id => S.siswa.find(s => s.id === id)).filter(Boolean).sort((a, b) => a.nama.localeCompare(b.nama, 'id')), data = [];
       for (const s of mur) data.push({ s, k: await call('karyaList', { siswaId: s.id }) });
       const pakai = mode === 'siswa' ? data : data.filter(d => d.k.length);
-      if (!pakai.length) { w.close(); return toast('Tidak ada foto karya pada siswa yang dipilih.', 'err'); }
+      if (!pakai.length) { if (w) w.close(); return toast('Tidak ada foto karya pada siswa yang dipilih.', 'err'); }
       const css = '@page{size:A4;margin:0}body{font-family:Arial,sans-serif;margin:0;padding:14mm}.s{page-break-after:always}.s:last-child{page-break-after:auto}h1{font-size:17pt;margin:0 0 1mm}.m{color:#555;font-size:10pt;margin-bottom:5mm}.g{display:grid;grid-template-columns:1fr 1fr;gap:4mm}.k{break-inside:avoid;border:1px solid #ccc;border-radius:2mm;padding:2mm}.k img{width:100%;max-height:85mm;object-fit:contain}.k div{font-size:9pt;margin-top:1mm}';
       const body = pakai.map(d => `<section class="s"><h1>Portofolio ${esc(d.s.nama)}</h1><div class="m">Kelas: ${esc(d.s.kelasAsli || d.s.kelas)} · ${d.k.length} karya</div>${d.k.length ? `<div class="g">${d.k.map(k => `<div class="k"><img src="${k.foto}"><div><b>${esc(k.label || 'Tanpa label')}</b> · ${fmtTgl(k.tanggal)}</div></div>`).join('')}</div>` : '<p>Belum ada karya.</p>'}</section>`).join('');
-      w.document.open(); w.document.write(`<html><head><meta charset="utf-8"><title>Portofolio Siswa</title><style>${css}</style></head><body>${body}</body></html>`); w.document.close();
+      const hasil = `<html><head><meta charset="utf-8"><title>Portofolio Siswa</title><style>${css}</style></head><body>${body}</body></html>`; if (word) return fxUnduh('portofolio.doc', hasil, 'application/msword'); w.document.open(); w.document.write(hasil); w.document.close();
       await Promise.all([...w.document.images].map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; })));
       w.focus(); w.print();
-    } catch (er) { try { w.close(); } catch (e) {} toast(er.message, 'err'); }
+    } catch (er) { try { if (w) w.close(); } catch (e) {} toast(er.message, 'err'); }
   };
+  $('#kp').onclick = () => ekspor(false); $('#kw').onclick = () => ekspor(true);
   const info = () => { $('#kn').textContent = pending.length ? pending.length + ' foto siap disimpan' : ''; };
   $('#kf').onchange = $('#kf1').onchange = e => { pending.push(...e.target.files); e.target.value = ''; info(); };
   $('#kam').onclick = async () => {
@@ -1511,8 +1607,9 @@ async function pKarya() {
     };
   };
   $('#kg').onclick = async e => {
-    const z = e.target.closest('[data-z]'), x = e.target.closest('[data-x]');
+    const z = e.target.closest('[data-z]'), x = e.target.closest('[data-x]'), lb = e.target.closest('[data-l]');
     if (z) { const o = document.createElement('div'); o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px'; o.innerHTML = `<img src="${L.find(k => k.id === z.dataset.z).foto}" style="max-width:100%;max-height:100%;border-radius:8px">`; o.onclick = () => o.remove(); document.body.appendChild(o); }
+    if (lb) { const f = L.find(q => q.id === lb.dataset.l); modal('Label foto', `<div class="fld"><label class="f">Label</label><input name="label" value="${esc(f.label || '')}" placeholder="Mis. Poster tema air"></div>`, async d => { await call('karyaLabel', { id: f.id, label: (d.label || '').trim() }); gal(); }); return; }
     if (x && await confirmBox('Hapus foto ini dari portofolio?')) { try { await call('karyaDelete', { id: x.dataset.x }); gal(); } catch (er) { toast(er.message, 'err'); } }
   };
   $('#ku').onclick = async () => {
@@ -1522,6 +1619,150 @@ async function pKarya() {
   };
   isi();
 }
+/* ============ Rubrik Penilaian ============ */
+const tabsNilai = a => `<div class="row" style="margin-bottom:14px;gap:8px;flex-wrap:wrap"><button class="btn ${a === 'nilai' ? '' : 'ghost'}" data-go="nilai">Kalkulator</button><button class="btn ${a === 'rubrik' ? '' : 'ghost'}" data-go="rubrik">Rubrik Penilaian</button><button class="btn ${a === 'tahfidz' ? '' : 'ghost'}" data-go="tahfidz">Rapor Tahfidz</button></div>`;
+const RB = { id: '', nama: '', kr: [], kelas: '', sid: '', tugas: 1, lv: {} };
+async function pRubrik() {
+  await muatSiswa(); const v = $('#view'), ks = kelasAll();
+  if (!ks.length) { v.innerHTML = tabsNilai('rubrik') + noKelas(); return; }
+  if (!ks.includes(RB.kelas)) RB.kelas = ks[0];
+  let L = await call('rubrikList');
+  const baru = () => [{ nama: '', bobot: 25, d: ['', '', '', ''] }, { nama: '', bobot: 25, d: ['', '', '', ''] }];
+  const muatEd = r => { RB.id = r ? r.id : ''; RB.nama = r ? r.nama : ''; RB.kr = r ? JSON.parse(JSON.stringify(r.kriteria)) : baru(); RB.lv = {}; };
+  if (!RB.kr.length || (RB.id && !L.find(r => r.id === RB.id))) muatEd(L[0] || null);
+  v.innerHTML = `${tabsNilai('rubrik')}<div class="ph"><h2>Rubrik Penilaian</h2></div><div class="card" id="re" style="margin-bottom:16px"></div><div class="card" id="rsc"></div>`;
+  const skor = () => { const t = RB.kr.reduce((a, k) => a + (+k.bobot || 0), 0); if (!t || RB.kr.some((k, i) => !RB.lv[i])) return null; return Math.round(RB.kr.reduce((a, k, i) => a + (+k.bobot || 0) * RB.lv[i] / 4, 0) / t * 100); };
+  const hit = () => { const x = skor(); $('#rsk').textContent = x === null ? '—' : x; };
+  const editor = () => {
+    $('#re').innerHTML = `<div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Rubrik tersimpan</label><select id="rs"><option value="">Rubrik baru</option>${L.map(r => `<option value="${r.id}" ${r.id === RB.id ? 'selected' : ''}>${esc(r.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Nama rubrik</label><input id="rn" value="${esc(RB.nama)}" placeholder="Mis. Rubrik presentasi"></div></div>
+      ${RB.kr.map((k, i) => `<div class="card" style="margin-top:10px"><div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Kriteria ${i + 1}</label><input data-k="${i}" data-f="n" value="${esc(k.nama)}"></div><div class="fld"><label class="f">Bobot (%)</label><input type="number" min="0" style="width:90px" data-k="${i}" data-f="b" value="${k.bobot}"></div><button class="btn ghost" data-rm="${i}">Hapus</button></div><div class="two">${[3, 2, 1, 0].map(j => `<div class="fld"><label class="f">Level ${j + 1}${j === 3 ? ' (tertinggi)' : j === 0 ? ' (terendah)' : ''}</label><textarea rows="2" data-k="${i}" data-f="d${j}">${esc(k.d[j])}</textarea></div>`).join('')}</div></div>`).join('')}
+      <div class="row" style="margin-top:12px"><button class="btn ghost" id="ra">Tambah kriteria</button><span class="grow"></span>${RB.id ? '<button class="btn danger" id="rd">Hapus rubrik</button>' : ''}<button class="btn" id="rv">Simpan rubrik</button></div>`;
+  };
+  const nilai = () => {
+    const sis = siswaKelas(RB.kelas); if (!sis.find(x => x.id === RB.sid)) RB.sid = sis[0] ? sis[0].id : '';
+    $('#rsc').innerHTML = `<h3 style="margin-bottom:10px">Beri nilai</h3><div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="rk">${kelasOpts(RB.kelas)}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="rw">${sis.map(x => `<option value="${x.id}" ${x.id === RB.sid ? 'selected' : ''}>${esc(x.nama)}</option>`).join('')}</select></div></div>
+      ${RB.kr.map((k, i) => `<div style="margin:12px 0"><b>${esc(k.nama || 'Kriteria ' + (i + 1))}</b> <span class="muted">(${+k.bobot || 0}%)</span><div class="row" style="gap:14px;margin:4px 0">${[4, 3, 2, 1].map(l => `<label class="row" style="gap:4px"><input type="radio" name="lv${i}" data-lv="${i}" value="${l}" ${RB.lv[i] === l ? 'checked' : ''}> Level ${l}</label>`).join('')}</div><div class="muted" style="font-size:13px" id="rd${i}">${RB.lv[i] ? esc(k.d[RB.lv[i] - 1] || '') : ''}</div></div>`).join('')}
+      <div class="row" style="flex-wrap:wrap;margin-top:8px"><b style="font-size:18px">Skor: <span id="rsk">—</span> / 100</b><span class="grow"></span><select id="rt">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === RB.tugas ? 'selected' : ''}>Tugas ${n}</option>`).join('')}</select><button class="btn" id="rw2">Tulis ke kolom Tugas</button></div><div class="muted" style="font-size:13px;margin-top:6px">Nilai di kolom lain dan nilai siswa lain tidak berubah.</div>`;
+    hit();
+  };
+  editor(); nilai();
+  v.oninput = e => { const t = e.target; if (t.id === 'rn') RB.nama = t.value; else if (t.dataset.k !== undefined) { const k = RB.kr[+t.dataset.k], f = t.dataset.f; if (f === 'n') k.nama = t.value; else if (f === 'b') k.bobot = +t.value || 0; else k.d[+f[1]] = t.value; } };
+  v.onchange = e => {
+    const t = e.target;
+    if (t.id === 'rs') { muatEd(L.find(r => r.id === t.value) || null); editor(); nilai(); }
+    else if (t.id === 'rk') { RB.kelas = t.value; nilai(); }
+    else if (t.id === 'rw') RB.sid = t.value;
+    else if (t.id === 'rt') RB.tugas = +t.value;
+    else if (t.dataset.lv !== undefined) { const i = +t.dataset.lv; RB.lv[i] = +t.value; $('#rd' + i).textContent = RB.kr[i].d[RB.lv[i] - 1] || ''; hit(); }
+    else if (t.dataset.k !== undefined) nilai();
+  };
+  v.onclick = async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    try {
+      if (b.id === 'ra') { if (RB.kr.length >= 10) return toast('Maksimal 10 kriteria.', 'err'); RB.kr.push({ nama: '', bobot: 0, d: ['', '', '', ''] }); RB.lv = {}; editor(); nilai(); }
+      else if (b.dataset.rm !== undefined) { if (RB.kr.length <= 1) return toast('Minimal 1 kriteria.', 'err'); RB.kr.splice(+b.dataset.rm, 1); RB.lv = {}; editor(); nilai(); }
+      else if (b.id === 'rv') {
+        if (!RB.nama.trim()) return toast('Nama rubrik wajib diisi.', 'err');
+        if (RB.kr.some(k => !k.nama.trim())) return toast('Isi nama semua kriteria.', 'err');
+        if (!RB.kr.some(k => k.bobot > 0)) return toast('Bobot kriteria belum diisi.', 'err');
+        RB.id = await call('rubrikSave', { id: RB.id, nama: RB.nama.trim(), kriteria: RB.kr }); L = await call('rubrikList'); toast('Rubrik tersimpan.'); editor(); nilai();
+      } else if (b.id === 'rd') { if (await confirmBox('Hapus rubrik ini?')) { await call('rubrikDelete', { id: RB.id }); L = await call('rubrikList'); muatEd(L[0] || null); editor(); nilai(); } }
+      else if (b.id === 'rw2') {
+        const x = skor(); if (x === null) return toast('Pilih level untuk semua kriteria dulu.', 'err'); if (!RB.sid) return toast('Pilih siswa dulu.', 'err');
+        await call('rubrikTulis', { kelas: RB.kelas, siswaId: RB.sid, tugas: RB.tugas, skor: x }); toast(`Skor ${x} ditulis ke Tugas ${RB.tugas}.`);
+      }
+    } catch (er) { toast(er.message, 'err'); }
+  };
+}
+/* ============ Rapor Tahfidz ============ */
+const SURAH = ["Al-Fatihah","Al-Mulk","Al-Qalam","Al-Haqqah","Al-Ma'arij","Nuh","Al-Jinn","Al-Muzzammil","Al-Muddatstsir","Al-Qiyamah","Al-Insan","Al-Mursalat","An-Naba'","An-Nazi'at","'Abasa","At-Takwir","Al-Infithar","Al-Muthaffifin","Al-Insyiqaq","Al-Buruj","Ath-Thariq","Al-A'la","Al-Ghasyiyah","Al-Fajr","Al-Balad","Asy-Syams","Al-Lail","Adh-Dhuha","Asy-Syarh","At-Tin","Al-'Alaq","Al-Qadr","Al-Bayyinah","Az-Zalzalah","Al-'Adiyat","Al-Qari'ah","At-Takatsur","Al-'Ashr","Al-Humazah","Al-Fil","Quraisy","Al-Ma'un","Al-Kautsar","Al-Kafirun","An-Nashr","Al-Lahab","Al-Ikhlash","Al-Falaq","An-Nas"];
+const NOSURAH = [1, ...Array.from({ length: 48 }, (_, i) => 67 + i)];
+const SKOR = ['Not Yet Assessed', 'Good', 'Fluent', 'Fluent Enough', 'Not Fluent'];
+const crcT = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = crcT[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zipDocx(files) {
+  const enc = new TextEncoder(), parts = [], cd = []; let off = 0;
+  const u16 = v => [v & 255, v >> 8 & 255], u32 = v => [v & 255, v >> 8 & 255, v >> 16 & 255, v >>> 24 & 255];
+  files.forEach(f => {
+    const nm = enc.encode(f.n), d = typeof f.d === 'string' ? enc.encode(f.d) : f.d, c = crc32(d);
+    const lh = Uint8Array.from([0x50, 0x4b, 3, 4, ...u16(20), ...u16(0x800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(d.length), ...u32(d.length), ...u16(nm.length), ...u16(0)]);
+    parts.push(lh, nm, d);
+    cd.push(Uint8Array.from([0x50, 0x4b, 1, 2, ...u16(20), ...u16(20), ...u16(0x800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(d.length), ...u32(d.length), ...u16(nm.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nm);
+    off += lh.length + nm.length + d.length;
+  });
+  const n = cd.reduce((a, b) => a + b.length, 0);
+  return new Blob([...parts, ...cd, Uint8Array.from([0x50, 0x4b, 5, 6, 0, 0, 0, 0, ...u16(files.length), ...u16(files.length), ...u32(n), ...u32(off), 0, 0])], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+}
+const tImg = (f, max) => new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(f); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok({ d: c.toDataURL('image/jpeg', .82), w: c.width, h: c.height }); }; im.onerror = () => no(new Error('Gambar tidak bisa dibaca.')); im.src = u; });
+function buatDocx(list, cfg) {
+  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+  const HD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', RT = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/';
+  const X = t => String(t ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const bin = d => Uint8Array.from(atob(d.split(',')[1]), c => c.charCodeAt(0));
+  const gambar = (rid, im, cm, n) => { const cx = Math.round(cm * 360000), cy = Math.round(cx * im.h / im.w); return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${n}" name="g${n}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${n}" name="g${n}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`; };
+  const P = (x, c) => `<w:p><w:pPr>${c ? '<w:jc w:val="center"/>' : ''}<w:spacing w:after="60"/></w:pPr>${x}</w:p>`;
+  const R = (t, b, z) => `<w:r><w:rPr>${b ? '<w:b/>' : ''}<w:sz w:val="${z || 22}"/></w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
+  const td = (t, w, b) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr>${P(R(t, b, 20))}</w:tc>`;
+  const bd = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(k => `<w:${k} w:val="single" w:sz="4" w:color="888888"/>`).join('');
+  let body = '';
+  list.forEach((r, i) => {
+    if (i) body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+    body += P(R('TAHFIZH REPORT', 1, 30), 1) + P(R('Nama: ' + r.nama, 1)) + P(R('Kelas: ' + r.kelas + '     Tanggal: ' + fmtTgl(today())));
+    body += `<w:tbl><w:tblPr><w:tblW w:w="9500" w:type="dxa"/><w:tblBorders>${bd}</w:tblBorders></w:tblPr>` + [`<w:tr>${td('No', 900, 1)}${td('Surah', 4600, 1)}${td('Skor', 4000, 1)}</w:tr>`, ...SURAH.map((n, j) => `<w:tr>${td(String(NOSURAH[j]), 900)}${td(n, 4600)}${td(r.skor[NOSURAH[j]] || SKOR[0], 4000)}</w:tr>`)].join('') + '</w:tbl>';
+    body += P(R('Catatan: ', 1) + R(r.catatan || '-')) + P('') + P(R('Guru Tahfidz,'), 1) + (cfg.ttd ? P(gambar('rIdT', cfg.ttd, 3.5, 100 + i), 1) : P('') + P('')) + P(R(cfg.guru || '', 1), 1);
+  });
+  const sect = `<w:sectPr>${cfg.kop ? '<w:headerReference w:type="default" r:id="rIdH"/>' : ''}${cfg.foot ? '<w:footerReference w:type="default" r:id="rIdF"/>' : ''}<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="${cfg.kop ? 2200 : 1134}" w:right="1134" w:bottom="1134" w:left="1134" w:header="400" w:footer="400"/></w:sectPr>`;
+  const rel = (id, t, tg) => `<Relationship Id="${id}" Type="${RT}${t}" Target="${tg}"/>`, rels = x => `${HD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${x}</Relationships>`;
+  const F = [
+    { n: '[Content_Types].xml', d: `${HD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>` },
+    { n: '_rels/.rels', d: rels(rel('rId1', 'officeDocument', 'word/document.xml')) },
+    { n: 'word/document.xml', d: `${HD}<w:document ${NS}><w:body>${body}${sect}</w:body></w:document>` },
+    { n: 'word/_rels/document.xml.rels', d: rels((cfg.kop ? rel('rIdH', 'header', 'header1.xml') : '') + (cfg.foot ? rel('rIdF', 'footer', 'footer1.xml') : '') + (cfg.ttd ? rel('rIdT', 'image', 'media/ttd.jpeg') : '')) }
+  ];
+  if (cfg.kop) F.push({ n: 'word/header1.xml', d: `${HD}<w:hdr ${NS}>${P(gambar('rIdK', cfg.kop, 17, 1), 1)}</w:hdr>` }, { n: 'word/_rels/header1.xml.rels', d: rels(rel('rIdK', 'image', 'media/kop.jpeg')) }, { n: 'word/media/kop.jpeg', d: bin(cfg.kop.d) });
+  if (cfg.foot) F.push({ n: 'word/footer1.xml', d: `${HD}<w:ftr ${NS}>${P(gambar('rIdK', cfg.foot, 17, 2), 1)}</w:ftr>` }, { n: 'word/_rels/footer1.xml.rels', d: rels(rel('rIdK', 'image', 'media/foot.jpeg')) }, { n: 'word/media/foot.jpeg', d: bin(cfg.foot.d) });
+  if (cfg.ttd) F.push({ n: 'word/media/ttd.jpeg', d: bin(cfg.ttd.d) });
+  return zipDocx(F);
+}
+function htmlRapor(list, cfg) {
+  const im = (g, w) => g ? `<img src="${g.d}" style="width:${w}">` : '';
+  return `<html><head><meta charset="utf-8"><title>Rapor Tahfidz</title><style>@page{size:A4;margin:12mm}body{font-family:'DejaVu Sans',Arial,sans-serif;font-size:10pt}.s{page-break-after:always;text-align:center}.s:last-child{page-break-after:auto}table{width:100%;border-collapse:collapse;text-align:left}td,th{border:1px solid #888;padding:2px 6px}h2{margin:6px 0}.l{text-align:left}</style></head><body>${list.map(r => `<section class="s">${im(cfg.kop, '100%')}<h2>TAHFIZH REPORT</h2><div class="l"><b>Nama: ${esc(r.nama)}</b><br>Kelas: ${esc(r.kelas)} &nbsp; Tanggal: ${fmtTgl(today())}</div><table><tr><th>No</th><th>Surah</th><th>Skor</th></tr>${SURAH.map((n, j) => `<tr><td>${NOSURAH[j]}</td><td>${esc(n)}</td><td>${esc(r.skor[NOSURAH[j]] || SKOR[0])}</td></tr>`).join('')}</table><p class="l"><b>Catatan:</b> ${esc(r.catatan || '-')}</p><p>Guru Tahfidz,<br>${im(cfg.ttd, '30mm')}<br><b>${esc(cfg.guru || '')}</b></p>${im(cfg.foot, '100%')}</section>`).join('')}</body></html>`;
+}
+async function pTahfidz() {
+  await muatSiswa(); const v = $('#view'), H = S.halaqah, TF = await call('tahfidzAll'), rec = TF.rec || {}; let cfg = TF.cfg || {}, cur = null;
+  v.innerHTML = `${tabsNilai('tahfidz')}<div class="ph"><div><h2>Rapor Tahfidz</h2><div class="muted">49 surah: Al-Fatihah dan surah 67 sampai 114</div></div><div class="row"><button class="btn ghost" id="td">Daftar Surah</button><button class="btn ghost" id="tc">Pengaturan dokumen</button></div></div>
+    <div class="card" style="margin-bottom:14px"><div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ta">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="tb"></select></div></div>
+      <div class="row" style="flex-wrap:wrap;margin-top:8px"><select id="tm">${SKOR.map(x => `<option>${x}</option>`).join('')}</select><button class="btn ghost" id="ti">Isi semua surah</button><div class="grow"></div><button class="btn" id="ts">Simpan</button><button class="btn ghost" id="tw">Unduh siswa (Word)</button><button class="btn ghost" id="tk">Unduh kelas (Word)</button><button class="btn ghost" id="tp">Cetak PDF siswa</button></div></div><div id="tt"></div>`;
+  const sis = () => S.siswa.filter(s => s.halaqahId === $('#ta').value).sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
+  const lap = s => ({ nama: s.nama, kelas: s.kelasAsli || (H.find(h => h.id === s.halaqahId) || {}).nama || '', skor: (rec[s.id] || {}).skor || {}, catatan: (rec[s.id] || {}).catatan || '' });
+  const draw = () => {
+    cur = S.siswa.find(s => s.id === $('#tb').value); const t = $('#tt');
+    if (!cur) { t.innerHTML = '<div class="card empty">Belum ada siswa di kelompok ini.</div>'; return; }
+    const r = lap(cur);
+    t.innerHTML = `<div class="card"><div class="tw"><table><thead><tr><th>No</th><th>Surah</th><th>Skor</th></tr></thead><tbody>${SURAH.map((n, j) => `<tr><td>${NOSURAH[j]}</td><td>${esc(n)}</td><td><select data-n="${NOSURAH[j]}">${SKOR.map(x => `<option ${(r.skor[NOSURAH[j]] || SKOR[0]) === x ? 'selected' : ''}>${x}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div><div class="fld" style="margin-top:12px"><label class="f">Catatan</label><textarea id="tn" rows="3">${esc(r.catatan)}</textarea></div></div>`;
+  };
+  const sinkron = () => { if (!cur) return; const sk = {}; $$('#tt [data-n]').forEach(e => { sk[e.dataset.n] = e.value; }); rec[cur.id] = { skor: sk, catatan: $('#tn').value }; };
+  const isi = () => { $('#tb').innerHTML = sis().map(s => `<option value="${s.id}">${esc(s.nama)}</option>`).join(''); draw(); };
+  $('#ta').onchange = isi; $('#tb').onchange = draw; isi();
+  $('#tt').oninput = $('#tt').onchange = sinkron;
+  $('#ti').onclick = () => { $$('#tt [data-n]').forEach(e => { e.value = $('#tm').value; }); sinkron(); };
+  $('#ts').onclick = async () => { if (!cur) return; sinkron(); try { await call('tahfidzSave', { siswaId: cur.id, skor: rec[cur.id].skor, catatan: rec[cur.id].catatan }); toast('Rapor tersimpan.'); } catch (er) { toast(er.message, 'err'); } };
+  const unduh = list => fxUnduhBlob('rapor-tahfidz.docx', buatDocx(list, cfg));
+  $('#tw').onclick = () => { if (!cur) return; sinkron(); unduh([lap(cur)]); };
+  $('#tk').onclick = () => { sinkron(); const l = sis(); if (!l.length) return toast('Belum ada siswa.', 'err'); unduh(l.map(lap)); };
+  $('#tp').onclick = () => { if (!cur) return; sinkron(); const w = window.open('', '_blank'); if (!w) return toast('Izinkan pop-up untuk mencetak.', 'err'); w.document.write(htmlRapor([lap(cur)], cfg)); w.document.close(); w.focus(); setTimeout(() => w.print(), 500); };
+  $('#td').onclick = () => modal('Daftar Surah', `<div style="columns:2;font-size:14px">${SURAH.map((n, j) => `<div>${NOSURAH[j]}. ${esc(n)}</div>`).join('')}</div>`, async () => {}, 'Tutup');
+  $('#tc').onclick = () => modal('Pengaturan dokumen', `<div class="fld"><label class="f">Nama guru (di bawah tanda tangan)</label><input name="guru" value="${esc(cfg.guru || '')}"></div>
+    <div class="fld"><label class="f">Kop surat (gambar, dipasang di header Word)${cfg.kop ? ' – sudah ada' : ''}</label><input type="file" name="kop" accept="image/*"></div>
+    <div class="fld"><label class="f">Footer (opsional)${cfg.foot ? ' – sudah ada' : ''}</label><input type="file" name="foot" accept="image/*"></div>
+    <div class="fld"><label class="f">Tanda tangan (opsional)${cfg.ttd ? ' – sudah ada' : ''}</label><input type="file" name="ttd" accept="image/*"></div>`, async d => {
+    const n = { ...cfg, guru: (d.guru || '').trim() };
+    if (d.kop && d.kop.size) n.kop = await tImg(d.kop, 1200); if (d.foot && d.foot.size) n.foot = await tImg(d.foot, 1200); if (d.ttd && d.ttd.size) n.ttd = await tImg(d.ttd, 400);
+    if (JSON.stringify(n).length > 900000) throw new Error('Gambar terlalu besar.');
+    await call('tahfidzCfg', n); cfg = n; toast('Pengaturan disimpan.');
+  });
+}
+const fxUnduhBlob = (nama, blob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nama; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); };
 async function pKartu() {
   await muatSiswa(); const v = $('#view'), H = S.halaqah;
   v.innerHTML = `<div class="ph"><h2>Kartu Laporan Orang Tua</h2></div><div class="card" style="margin-bottom:14px"><div class="row"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="qa">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="qb"></select></div><div class="fld grow"><label class="f">Bulan</label><input id="qc" type="month" value="${fxHariIni().slice(0, 7)}"></div></div><div class="fld"><label class="f">Catatan guru (opsional)</label><textarea id="qn" rows="2"></textarea></div><button class="btn" id="qg">Buat kartu</button><p class="muted" style="font-size:13px;margin:8px 0 0">Kehadiran diambil dari bulan yang dipilih. Nilai diambil dari Kalkulator Nilai kelas tersebut (data terbaru).</p></div><div id="qo"></div>`;
@@ -1538,16 +1779,16 @@ async function pKartu() {
       const per = new Date(bln + '-01T12:00:00').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }), cat = $('#qn').value.trim();
       const cv = document.createElement('canvas'), c = cv.getContext('2d'); cv.width = 800;
       const bungkus = (t, mx) => { const out = []; let b = ''; t.split(/\s+/).forEach(w => { const u = b ? b + ' ' + w : w; if (c.measureText(u).width > mx && b) { out.push(b); b = w; } else b = u; }); if (b) out.push(b); return out; };
-      c.font = '20px sans-serif'; const bar = cat ? bungkus(cat, 720) : []; cv.height = 560 + (bar.length ? 50 + bar.length * 28 : 0);
+      c.font = '20px DejaVu Sans, Arial, sans-serif'; const bar = cat ? bungkus(cat, 720) : []; cv.height = 560 + (bar.length ? 50 + bar.length * 28 : 0);
       c.fillStyle = '#fff'; c.fillRect(0, 0, 800, cv.height); const gr = c.createLinearGradient(0, 0, 800, 110); gr.addColorStop(0, '#264653'); gr.addColorStop(0.5, '#e76f51'); gr.addColorStop(1, '#f4a261'); c.fillStyle = gr; c.fillRect(0, 0, 800, 110);
-      c.fillStyle = '#fff'; c.font = 'bold 30px sans-serif'; c.fillText('Laporan Perkembangan Siswa', 40, 55); c.font = '20px sans-serif'; c.fillText(per, 40, 88);
-      c.fillStyle = '#111'; c.font = 'bold 30px sans-serif'; c.fillText(s.nama, 40, 165); c.fillStyle = '#555'; c.font = '20px sans-serif'; c.fillText('Kelas/Halaqah: ' + h.nama, 40, 198);
-      c.fillStyle = '#111'; c.font = 'bold 22px sans-serif'; c.fillText(`Kehadiran (${rk.hari} pertemuan)`, 40, 245);
-      [['Hadir', r.H, '#16a34a'], ['Sakit', r.S, '#ca8a04'], ['Izin', r.I, '#2563eb'], ['Alpa', r.A, '#dc2626']].forEach((x, i) => { const X = 40 + i * 185; c.fillStyle = '#f3f4f6'; c.fillRect(X, 265, 170, 100); c.fillStyle = x[2]; c.font = 'bold 40px sans-serif'; c.fillText(x[1], X + 16, 320); c.fillStyle = '#555'; c.font = '18px sans-serif'; c.fillText(x[0], X + 16, 350); });
-      c.fillStyle = '#111'; c.font = 'bold 22px sans-serif'; c.fillText('Nilai', 40, 415); c.font = '20px sans-serif';
+      c.fillStyle = '#fff'; c.font = 'bold 30px DejaVu Serif, Georgia, serif'; c.fillText('Laporan Perkembangan Siswa', 40, 55); c.font = '20px DejaVu Sans, Arial, sans-serif'; c.fillText(per, 40, 88);
+      c.fillStyle = '#264653'; c.font = 'bold 30px DejaVu Serif, Georgia, serif'; c.fillText(s.nama, 40, 165); c.fillStyle = '#5f7480'; c.font = '20px DejaVu Sans, Arial, sans-serif'; c.fillText('Kelas/Halaqah: ' + h.nama, 40, 198);
+      c.fillStyle = '#264653'; c.font = 'bold 22px DejaVu Sans, Arial, sans-serif'; c.fillText(`Kehadiran (${rk.hari} pertemuan)`, 40, 245);
+      [['Hadir', r.H, '#2a9d8f'], ['Sakit', r.S, '#e08a2e'], ['Izin', r.I, '#2a7f9e'], ['Alpa', r.A, '#c23b3b']].forEach((x, i) => { const X = 40 + i * 185; c.fillStyle = '#f7ecde'; c.fillRect(X, 265, 170, 100); c.fillStyle = x[2]; c.font = 'bold 40px DejaVu Serif, Georgia, serif'; c.fillText(x[1], X + 16, 320); c.fillStyle = '#5f7480'; c.font = '18px DejaVu Sans, Arial, sans-serif'; c.fillText(x[0], X + 16, 350); });
+      c.fillStyle = '#264653'; c.font = 'bold 22px DejaVu Sans, Arial, sans-serif'; c.fillText('Nilai', 40, 415); c.font = '20px DejaVu Sans, Arial, sans-serif';
       c.fillText('Rata-rata tugas: ' + (rata === null ? '—' : rata), 40, 450); c.fillText('UTS/UAS: ' + (uts === null ? '—' : uts), 40, 482);
-      let y = 520; if (bar.length) { c.font = 'bold 22px sans-serif'; c.fillStyle = '#111'; c.fillText('Catatan guru', 40, y); c.font = '20px sans-serif'; c.fillStyle = '#333'; bar.forEach((l, i) => c.fillText(l, 40, y + 32 + i * 28)); y += 50 + bar.length * 28; }
-      c.fillStyle = '#777'; c.font = '16px sans-serif'; c.fillText('Guru: ' + S.user.nama, 40, cv.height - 22);
+      let y = 520; if (bar.length) { c.font = 'bold 22px DejaVu Sans, Arial, sans-serif'; c.fillStyle = '#264653'; c.fillText('Catatan guru', 40, y); c.font = '20px DejaVu Sans, Arial, sans-serif'; c.fillStyle = '#35525e'; bar.forEach((l, i) => c.fillText(l, 40, y + 32 + i * 28)); y += 50 + bar.length * 28; }
+      c.fillStyle = '#7a8c94'; c.font = '16px DejaVu Sans, Arial, sans-serif'; c.fillText('Guru: ' + S.user.nama, 40, cv.height - 22);
       const teks = `*Laporan Perkembangan Siswa*\nNama: ${s.nama}\nKelas: ${h.nama}\nPeriode: ${per}\nKehadiran: ${r.H} hadir, ${r.S} sakit, ${r.I} izin, ${r.A} alpa (${rk.hari} pertemuan)\nRata-rata tugas: ${rata === null ? '-' : rata}\nUTS/UAS: ${uts === null ? '-' : uts}` + (cat ? `\nCatatan: ${cat}` : '') + `\n\nSalam, ${S.user.nama}`;
       $('#qo').innerHTML = `<div class="card"><img src="${cv.toDataURL('image/png')}" style="max-width:100%;border-radius:8px;border:1px solid #8884"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="qw">Kirim lewat WhatsApp</button><button class="btn ghost" id="qd">Unduh gambar</button></div></div>`;
       const blob = () => new Promise(res => cv.toBlob(res, 'image/png'));
@@ -1792,9 +2033,32 @@ const A = {
   },
   adminSetNama: async p => { const n = p.nama.trim(); if (!n) throw new Error('Nama tidak boleh kosong.'); await updateDoc(doc(db, 'guru', p.uid), { nama: n }); },
   adminJurnalSemua: async () => { const gs = await getDocs(collection(db, 'guru')); return (await Promise.all(gs.docs.map(async d => (await allOf(d.id, 'jurnal')).map(j => ({ ...j, guru: d.data().nama }))))).flat().sort((a, b) => cmp(a.tanggal, b.tanggal)); },
-  karyaList: async p => (await getDocs(query(C('karya'), where('siswaId', '==', p.siswaId)))).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => cmp(b.tanggal, a.tanggal) || (b.dibuat - a.dibuat)),
-  karyaSave: async p => { if (p.foto.length > 900000) throw new Error('Foto terlalu besar.'); await addDoc(C('karya'), { siswaId: p.siswaId, label: p.label, foto: p.foto, tanggal: p.tanggal, dibuat: Date.now() }); },
-  karyaDelete: async p => deleteDoc(D('karya', p.id)),
+  karyaList: async p => (await getDocs(query(collection(db, 'karya'), where('siswaId', '==', p.siswaId)))).docs.map(d => ({ id: d.id, ...d.data(), mine: d.data().ownerUid === uid() })).sort((a, b) => cmp(b.tanggal, a.tanggal) || (b.dibuat - a.dibuat)),
+  karyaSave: async p => { if (p.foto.length > 900000) throw new Error('Foto terlalu besar.'); await addDoc(collection(db, 'karya'), { siswaId: p.siswaId, label: p.label, foto: p.foto, tanggal: p.tanggal, dibuat: Date.now(), ownerUid: uid(), pemilik: ME.nama }); },
+  karyaDelete: async p => { const r = doc(db, 'karya', p.id), c = await getDoc(r); if (!c.exists()) return; if (c.data().ownerUid !== uid()) throw new Error('Foto hanya bisa dihapus oleh guru yang mengunggahnya.'); await deleteDoc(r); },
+  karyaLabel: async p => { const r = doc(db, 'karya', p.id), c = await getDoc(r); if (!c.exists() || c.data().ownerUid !== uid()) throw new Error('Label hanya bisa diubah oleh guru yang mengunggahnya.'); await updateDoc(r, { label: p.label }); },
+  tahfidzAll: async () => { const o = { cfg: {}, rec: {} }; (await getDocs(C('tahfidz'))).docs.forEach(d => { if (d.id === '_cfg') o.cfg = d.data(); else o.rec[d.id] = d.data(); }); return o; },
+  tahfidzSave: async p => { await setDoc(D('tahfidz', p.siswaId), { skor: p.skor, catatan: p.catatan || '', diubah: Date.now() }); },
+  tahfidzCfg: async p => { await setDoc(D('tahfidz', '_cfg'), p); },
+  rubrikList: async () => (await getDocs(C('rubrik'))).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.nama || '').localeCompare(b.nama || '', 'id')),
+  rubrikSave: async p => { const o = { nama: p.nama, kriteria: p.kriteria, diubah: Date.now() }; if (p.id) { await setDoc(D('rubrik', p.id), o); return p.id; } return (await addDoc(C('rubrik'), o)).id; },
+  rubrikDelete: async p => { await deleteDoc(D('rubrik', p.id)); },
+  rubrikTulis: async p => {
+    const ref = D('nilai', encodeURIComponent(p.kelas)), rows = ((await getDoc(ref)).data() || {}).rows || {}, r = rows[p.siswaId] || {};
+    const ts = Array.from({ length: 5 }, (_, i) => (r.ts && r.ts[i] != null ? r.ts[i] : '')); ts[p.tugas - 1] = String(p.skor);
+    rows[p.siswaId] = { ts, u: r.u != null ? r.u : '' }; await setDoc(ref, { kelas: p.kelas, rows });
+  },
+  soalList: async () => { const adm = (await getDoc(doc(db, 'admins', uid()))).exists(); return (await getDocs(collection(db, 'soal'))).docs.map(d => { const x = d.data(), mine = x.ownerUid === uid(); return { id: d.id, ...x, mine, bisaHapus: mine || adm }; }).sort((a, b) => (b.dibuat || 0) - (a.dibuat || 0)); },
+  soalSave: async p => {
+    const o = { tipe: p.tipe, mapel: p.mapel || '', teks: p.teks, gambar: p.gambar || '' }; if (p.tipe === 'pg') { o.opsi = p.opsi; o.opsiGambar = p.opsiGambar; o.kunci = p.kunci; } else if (p.tipe === 'esai') { o.pedoman = p.pedoman || ''; o.pedomanGambar = p.pedomanGambar || ''; } else o.pasangan = p.pasangan;
+    if (p.id) {
+      const cur = await getDoc(doc(db, 'soal', p.id));
+      if (cur.exists() && cur.data().ownerUid === uid()) { await setDoc(doc(db, 'soal', p.id), { ...o, ownerUid: uid(), pemilik: cur.data().pemilik, dibuat: cur.data().dibuat, diubah: Date.now() }); return { id: p.id, salinan: false }; }
+      const r = await addDoc(collection(db, 'soal'), { ...o, ownerUid: uid(), pemilik: ME.nama, asalId: p.id, dibuat: Date.now() }); return { id: r.id, salinan: true };
+    }
+    const r = await addDoc(collection(db, 'soal'), { ...o, ownerUid: uid(), pemilik: ME.nama, dibuat: Date.now() }); return { id: r.id, salinan: false };
+  },
+  soalDelete: async p => { const ref = doc(db, 'soal', p.id), cur = await getDoc(ref); if (!cur.exists()) return; if (cur.data().ownerUid !== uid() && !(await getDoc(doc(db, 'admins', uid()))).exists()) throw new Error('Soal guru lain tidak bisa dihapus.'); await deleteDoc(ref); },
   undanganList: async () => (await getDocs(collection(db, 'undangan'))).docs.map(d => ({ ...d.data(), email: d.id })).sort((a, b) => cmp(a.email, b.email)),
   undanganTambah: async p => {
     let ok = 0; const salah = [];
