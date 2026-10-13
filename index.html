@@ -282,6 +282,24 @@ main{padding:26px 44px 70px}
 .tfs{overflow-wrap:anywhere}
 .tfi select{width:100%}
 @media(max-width:900px){.tfg{grid-template-columns:1fr}}
+
+/* tampilan HP: tanggal jurnal, tombol rapor tahfidz */
+.list-i{align-items:flex-start}
+.list-i .badge.tgl{flex:none;width:64px;text-align:center;padding:6px 0;border-radius:12px;line-height:1.3;white-space:nowrap;font-size:12px}
+.list-i .badge.tgl b{font-size:13px}
+@media(max-width:700px){
+  .ph{flex-wrap:wrap;gap:10px}
+  .ph .row{flex-wrap:wrap;gap:8px}
+  .tfm{display:grid!important;grid-template-columns:1fr 1fr;gap:10px}
+  .tfm .fld{margin:0;min-width:0}
+  .tfm .btn{align-self:end;width:100%;justify-content:center;min-height:46px}
+  .tfa{display:grid!important;grid-template-columns:1fr 1fr;gap:10px}
+  .tfa .grow{display:none}
+  .tfa #ts{grid-column:1/-1}
+  .tfa .btn{width:100%;justify-content:center;min-height:44px}
+  .tfi{grid-template-columns:24px minmax(0,1fr) 140px;gap:8px}
+  .tfi select{font-size:13px;padding-left:8px;padding-right:6px}
+}
 </style>
 </head>
 <body>
@@ -541,7 +559,7 @@ async function pBeranda() {
     <div class="tools">${quick.map(q => `<button class="tl" data-go="${q[0]}">${ico(q[1])}<span><b>${q[2]}</b><small>${q[3]}</small></span></button>`).join('')}</div>
     <div class="two">
       <div class="card"><h3>Jurnal terbaru</h3>
-        ${d.jurnalTerbaru.length ? d.jurnalTerbaru.map(j => `<div class="list-i"><span class="badge">${fmtTgl(j.tanggal)}</span><div><b>${esc(j.materi)}</b><div class="muted" style="font-size:13px">${esc([j.kelas, j.mapel].filter(Boolean).join(' • '))}</div></div></div>`).join('') : '<div class="empty">Belum ada jurnal.</div>'}
+        ${d.jurnalTerbaru.length ? d.jurnalTerbaru.map(j => `<div class="list-i"><span class="badge tgl">${(t => t.length >= 3 ? `<b>${t.slice(0, 2).join(' ')}</b><br>${t.slice(2).join(' ')}` : t.join(' '))(String(fmtTgl(j.tanggal)).split(' '))}</span><div><b>${esc(j.materi)}</b><div class="muted" style="font-size:13px">${esc([j.kelas, j.mapel].filter(Boolean).join(' • '))}</div></div></div>`).join('') : '<div class="empty">Belum ada jurnal.</div>'}
       </div>
       <div class="card"><h3>Anggota per kelas/halaqah</h3>
         ${d.kelas.length ? `<div class="tw"><table><thead><tr><th>Kelas/Halaqah</th><th class="num">Jumlah</th><th class="num">L</th><th class="num">P</th></tr></thead><tbody>${d.kelas.map(k => `<tr><td>${esc(k.kelas)}</td><td class="num">${k.jumlah}</td><td class="num">${k.L}</td><td class="num">${k.P}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Belum ada data siswa.</div>'}
@@ -1769,7 +1787,7 @@ async function pTahfidz() {
   const dft = () => daftar(cfg, cur ? (rec[cur.id] || {}).extra : []), bisa = () => cur && (semua || !rec[cur.id] || rec[cur.id].mine !== false);
   v.innerHTML = `${tabsNilai('tahfidz')}<div class="ph"><div><h2>Rapor Tahfidz</h2><div class="muted">49 surah, urutan sesuai format rapor</div></div><div class="row"><button class="btn ghost" id="tg">Nama &amp; tanda tangan saya</button><button class="btn ghost" id="tx">Tambah surah</button><button class="btn ghost" id="td">Daftar Surah</button>${semua ? '<button class="btn ghost" id="tc">Pengaturan dokumen</button>' : ''}</div></div>
     <div class="card" style="margin-bottom:14px"><div class="row" style="flex-wrap:wrap"><div class="fld grow"><label class="f">Kelas/Halaqah</label><select id="ta">${H.map(h => `<option value="${h.id}">${esc(h.nama)}</option>`).join('')}</select></div><div class="fld grow"><label class="f">Siswa</label><select id="tb"></select></div></div>
-      <div class="row" style="flex-wrap:wrap;margin-top:10px;align-items:flex-end"><div class="fld grow"><label class="f">Isi massal dari</label><select id="ma"></select></div><div class="fld grow"><label class="f">sampai</label><select id="mb"></select></div><div class="fld"><label class="f">Skor</label><select id="tm">${SKOR.map(x => `<option ${x === 'Good' ? 'selected' : ''}>${x}</option>`).join('')}</select></div><button class="btn ghost" id="ti">Terapkan</button></div><div class="row" style="flex-wrap:wrap;margin-top:8px"><div class="grow"></div><button class="btn" id="ts">Simpan</button><button class="btn danger" id="th">Hapus rapor</button><button class="btn ghost" id="tw">Unduh siswa (Word)</button><button class="btn ghost" id="tk">Unduh kelas (Word)</button><button class="btn ghost" id="tp">Cetak PDF siswa</button></div></div><div id="tt"></div>`;
+      <div class="row tfm" style="flex-wrap:wrap;margin-top:10px;align-items:flex-end"><div class="fld grow"><label class="f">Isi massal dari</label><select id="ma"></select></div><div class="fld grow"><label class="f">sampai</label><select id="mb"></select></div><div class="fld"><label class="f">Skor</label><select id="tm">${SKOR.map(x => `<option ${x === 'Good' ? 'selected' : ''}>${x}</option>`).join('')}</select></div><button class="btn ghost" id="ti">Terapkan</button></div><div class="row tfa" style="flex-wrap:wrap;margin-top:8px"><div class="grow"></div><button class="btn" id="ts">Simpan</button><button class="btn danger" id="th">Hapus rapor</button><button class="btn ghost" id="tw">Unduh siswa (Word)</button><button class="btn ghost" id="tk">Unduh kelas (Word)</button><button class="btn ghost" id="tp">Cetak PDF siswa</button></div></div><div id="tt"></div>`;
   const sis = () => S.siswa.filter(s => inK(s, $('#ta').value)).sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
   const lap = s => ({ nama: s.nama, kelas: s.kelas || s.kelasAsli || (H.find(h => h.id === s.halaqahId) || {}).nama || '', skor: (rec[s.id] || {}).skor || {}, catatan: (rec[s.id] || {}).catatan || '', extra: (rec[s.id] || {}).extra || [], ownerUid: (rec[s.id] || {}).ownerUid || '', pemilik: (rec[s.id] || {}).pemilik || '' });
   const massal = () => { const D = dft(), a = +($('#ma').value || 0), b = $('#mb').value === '' ? D.length - 1 : +$('#mb').value, o = D.map((d, j) => `<option value="${j}">${j + 1}. ${esc(d.nama)}</option>`).join(''); $('#ma').innerHTML = o; $('#mb').innerHTML = o; $('#ma').value = Math.min(a, D.length - 1); $('#mb').value = Math.min(b, D.length - 1); };
